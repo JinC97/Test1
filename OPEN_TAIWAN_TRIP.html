@@ -1,0 +1,1475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Route Studio">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Taiwan Master Trip | Route Studio · Multi-trip itinerary planner</title>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://server.arcgisonline.com">
+<link rel="preconnect" href="https://services.arcgisonline.com">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --panel:#ffffff; --soft:#f8fafc;
+  --brand:#0f766e; --brand2:#0ea5a4; --day1:#0f766e; --day2:#c2410c; --danger:#b91c1c;
+  --shadow:0 12px 34px rgba(15,23,42,.13); --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:#f1f5f9;overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.app{height:100%;height:100dvh;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) calc(14px + env(safe-area-inset-right,0px)) 10px calc(14px + env(safe-area-inset-left,0px));background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);z-index:1200;backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:10px;min-width:260px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#0f766e,#14b8a6);display:grid;place-items:center;color:white;font-weight:900;box-shadow:0 8px 22px rgba(15,118,110,.25)}
+.brand h1{font-size:15px;line-height:1.15;margin:0}
+.brand small{display:block;color:var(--muted);font-weight:500;margin-top:3px}
+.toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+.spacer{flex:1}
+.btn,.seg button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:8px 10px;font-weight:700;font-size:13px}
+.btn:hover,.seg button:hover{background:#f8fafc}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.seg{display:flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff}
+.seg button{border:0;border-radius:0;border-right:1px solid var(--line);padding:8px 11px}
+.seg button:last-child{border-right:0}
+.seg button.active{background:#0f172a;color:#fff}
+.main{min-height:0;display:grid;grid-template-columns:390px 1fr;position:relative}
+.sidebar{min-height:0;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:800}
+.sidebar-head{padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.daytabs{display:grid;grid-template-columns:1fr 1fr 64px;gap:6px}
+.daytab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;text-align:center;font-size:12px;font-weight:800}
+.daytab.active{background:#0f172a;color:#fff}
+.summary{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+.kpi{flex:1;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 9px}
+.kpi b{display:block;font-size:15px}
+.kpi span{font-size:10px;color:var(--muted)}
+.notice{font-size:11px;color:#475569;background:#f8fafc;border:1px solid var(--line);padding:8px 9px;border-radius:9px;margin-top:9px;line-height:1.35}
+.itinerary-wrap{min-height:0;overflow:auto;padding:10px 10px calc(24px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.base-card{display:flex;align-items:center;gap:10px;border:1px solid #bae6fd;background:#f0f9ff;border-radius:13px;padding:10px;margin-bottom:7px}
+.base-pin{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#0369a1;color:#fff;font-weight:900}
+.base-card b{font-size:13px}.base-card small{display:block;color:var(--muted);margin-top:2px}
+.base-card{cursor:pointer}.base-card:hover{border-color:#7dd3fc;background:#eaf8ff}
+.base-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.base-flow .arrow{color:#0284c7;font-weight:900}.base-flow .stage{font-size:10px;background:#e0f2fe;border:1px solid #bae6fd;border-radius:999px;padding:2px 6px;color:#075985;font-weight:800}
+.base-list{display:grid;gap:8px;margin-top:10px}.base-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px;background:#f8fafc}.base-row b{font-size:12px}.base-row small{display:block;color:var(--muted);margin-top:3px;line-height:1.35}.base-row-actions{display:flex;gap:5px}.base-row-actions button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 8px;font-size:10px;font-weight:800}.stage-box{border:1px solid #bae6fd;background:#f0f9ff;border-radius:12px;padding:10px;margin:10px 0}.stage-box h3{font-size:12px;margin:0 0 8px}.stage-pair{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:8px;align-items:end}.stage-arrow{display:grid;place-items:center;color:#0284c7;font-weight:900;font-size:18px;padding-bottom:9px}
+.place-card{position:relative;display:grid;grid-template-columns:32px 1fr auto;gap:9px;align-items:start;border:1px solid var(--line);border-radius:13px;padding:10px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.035);transition:.15s ease}
+.place-card:hover{border-color:#cbd5e1;box-shadow:0 5px 14px rgba(15,23,42,.07)}
+.place-card.selected{outline:2px solid rgba(15,118,110,.28);border-color:#5eead4}
+.place-card.route-a{outline:2px solid #0284c7}.place-card.route-b{outline:2px solid #e11d48}
+.drag{color:#94a3b8;cursor:grab;text-align:center;font-size:19px;line-height:1}
+.num{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900;margin-top:2px}
+.num.d1{background:var(--day1)}.num.d2{background:var(--day2)}
+.pc-title{font-weight:850;font-size:13px;line-height:1.25}
+.pc-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.chip{font-size:10px;border-radius:999px;background:#f1f5f9;color:#475569;padding:3px 6px;border:1px solid #e2e8f0}
+.chip.high{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+.chip.optional{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+.pc-sub{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.35}
+.pc-side{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:42px}
+.pc-time{font-size:11px;font-weight:800;color:#334155;white-space:nowrap;padding-top:2px}
+.pc-edit{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:9px;color:#475569;font-size:15px;font-weight:900;display:grid;place-items:center;cursor:pointer;opacity:.78;transition:.15s ease}
+.pc-edit:hover{opacity:1;background:#f0fdfa;border-color:#99f6e4;color:#0f766e}
+.pc-edit:focus-visible{outline:2px solid #14b8a6;outline-offset:2px}
+.leg{display:grid;grid-template-columns:16px 1fr auto;gap:7px;align-items:center;padding:7px 9px 7px 16px;color:#64748b;font-size:10.5px;border-left:2px dashed #cbd5e1;margin:0 0 0 15px;min-height:35px}
+.leg b{color:#334155}.leg button{border:0;background:#f1f5f9;border-radius:7px;padding:4px 7px;font-size:10px;font-weight:800}
+.legacy-strip{border:1px dashed #94a3b8;background:#f8fafc;border-radius:12px;padding:9px;margin:8px 0}
+.legacy-strip b{font-size:12px}.legacy-strip p{font-size:10.5px;margin:4px 0 7px;color:var(--muted)}
+.legacy-list{display:flex;flex-wrap:wrap;gap:5px}
+.legacy-list button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 7px;font-size:10px}
+#map{height:100%;width:100%;background:#dbeafe}
+.map-wrap{position:relative;min-width:0;min-height:0}
+.map-toolbar{position:absolute;z-index:700;top:12px;left:12px;display:flex;gap:6px;pointer-events:none}
+.map-toolbar>*{pointer-events:auto}
+.map-pill{background:rgba(255,255,255,.94);border:1px solid var(--line);box-shadow:0 5px 18px rgba(15,23,42,.12);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800}
+.marker-bubble{width:30px;height:30px;border-radius:50% 50% 50% 10%;transform:rotate(-45deg);display:grid;place-items:center;border:2px solid #fff;box-shadow:0 5px 13px rgba(15,23,42,.25)}
+.marker-bubble span{transform:rotate(45deg);color:#fff;font-size:11px;font-weight:900}
+.marker-d1{background:var(--day1)}.marker-d2{background:var(--day2)}.marker-base{background:#0369a1}.marker-legacy{background:#64748b}
+.info-drawer,.route-drawer{position:absolute;z-index:900;top:12px;right:12px;width:min(360px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px;backdrop-filter:blur(10px);-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.hidden{display:none!important}
+.drawer-head{display:flex;align-items:start;gap:10px}
+.drawer-head h2{font-size:16px;margin:0;line-height:1.25}
+.drawer-head p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.x{margin-left:auto;border:0;background:#f1f5f9;border-radius:8px;width:30px;height:30px;font-weight:900}
+.detail-grid{display:grid;grid-template-columns:88px 1fr;gap:6px 9px;font-size:11px;margin:12px 0}
+.detail-grid dt{color:var(--muted)}.detail-grid dd{margin:0;font-weight:650}
+.note-box{font-size:11px;line-height:1.45;background:#f8fafc;border:1px solid var(--line);padding:9px;border-radius:10px}
+.drawer-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.drawer-actions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:800}
+.drawer-actions .primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.route-selectors{display:grid;grid-template-columns:1fr 34px 1fr;gap:7px;align-items:center;margin:10px 0}
+.route-point{border:1px solid var(--line);border-radius:10px;padding:8px;background:#f8fafc;min-height:48px}
+.route-point span{display:block;font-size:9px;color:var(--muted);font-weight:900;text-transform:uppercase}
+.route-point b{font-size:11px;line-height:1.2;display:block;margin-top:3px}
+.swap{border:0;background:#f1f5f9;border-radius:9px;width:34px;height:34px;font-weight:900}
+.recommend{border:1px solid #99f6e4;background:#f0fdfa;border-radius:11px;padding:9px;margin:9px 0;font-size:11px;line-height:1.4}
+.recommend b{color:#0f766e}
+.methods{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.method{border:1px solid var(--line);border-radius:11px;padding:9px;background:#fff}
+.method.active{border-color:#5eead4;background:#f0fdfa}
+.method-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.method b{font-size:11px}.method small{color:var(--muted);font-size:9.5px}
+.method .estimate{font-size:13px;font-weight:900;margin-top:5px}
+.method button{width:100%;margin-top:7px;border:0;border-radius:8px;background:#f1f5f9;padding:6px;font-size:10px;font-weight:850}
+.steps{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.step{display:grid;grid-template-columns:40px 1fr;gap:6px;font-size:10px;padding:5px 0;border-bottom:1px dashed #e2e8f0}
+.step b{color:#475569}
+.route-footer{font-size:9px;color:#94a3b8;margin-top:9px;line-height:1.35}
+.toast{position:absolute;z-index:1500;left:50%;bottom:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 12px;border-radius:10px;box-shadow:var(--shadow);font-size:11px;max-width:min(520px,90%);display:flex;gap:9px;align-items:center}
+.toast button{border:0;background:#fff;color:#0f172a;border-radius:7px;padding:4px 7px;font-weight:850;font-size:10px}
+.modal-backdrop{position:fixed;inset:0;z-index:2500;background:rgba(15,23,42,.5);display:grid;place-items:center;padding:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));overscroll-behavior:contain}
+.modal{width:min(620px,100%);max-height:92vh;max-height:92dvh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 28px 80px rgba(15,23,42,.35);padding:18px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.modal h2{margin:0 0 12px;font-size:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1/-1}
+.field label{font-size:10px;font-weight:850;color:#475569}
+.field input,.field select,.field textarea{border:1px solid #cbd5e1;border-radius:9px;padding:8px 9px;background:#fff;outline:none}
+.field textarea{min-height:78px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.12)}
+.modal-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:14px}
+.modal-actions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 11px;font-weight:800}
+.modal-actions .primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.status{font-size:10px;color:#64748b;margin-top:4px}
+.leaflet-control-attribution{font-size:9px!important}
+
+/* Multi-trip workspace */
+.trip-gate{position:fixed;inset:0;z-index:5000;background:linear-gradient(145deg,#eefbf8 0%,#f8fafc 45%,#eef2ff 100%);overflow:auto;padding:32px 18px}
+.trip-shell{width:min(1040px,100%);margin:0 auto}
+.trip-hero{display:flex;justify-content:space-between;gap:18px;align-items:end;margin-bottom:20px}
+.trip-hero h1{margin:0;font-size:30px;letter-spacing:-.03em}.trip-hero p{margin:7px 0 0;color:#64748b;max-width:680px;line-height:1.5;font-size:13px}
+.trip-actions{display:flex;gap:8px;flex-wrap:wrap}.trip-actions button{border:0;border-radius:11px;padding:10px 13px;font-weight:850;background:#0f766e;color:white}.trip-actions button.secondary{background:#fff;color:#0f172a;border:1px solid #dbe4ea}
+.trip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.trip-card{background:rgba(255,255,255,.94);border:1px solid #dbe4ea;border-radius:16px;padding:15px;box-shadow:0 9px 24px rgba(15,23,42,.07);transition:.15s ease;cursor:pointer;position:relative}
+.trip-card:hover{transform:translateY(-2px);box-shadow:0 13px 30px rgba(15,23,42,.11);border-color:#99f6e4}.trip-card h3{margin:0 0 5px;font-size:16px}.trip-card p{margin:0;color:#64748b;font-size:11px;line-height:1.45}.trip-card .trip-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.trip-card .trip-mini{font-size:10px;padding:4px 7px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}.trip-card .card-menu{position:absolute;right:10px;top:10px;border:0;background:#f1f5f9;border-radius:8px;width:28px;height:28px;font-weight:900}.trip-empty{border:1px dashed #94a3b8;background:rgba(255,255,255,.7);border-radius:16px;padding:24px;text-align:center;color:#64748b}
+.trip-switch{border:1px solid #dbe4ea;background:#f8fafc;border-radius:10px;padding:7px 9px;font-size:11px;font-weight:850;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.daytabs{grid-template-columns:repeat(auto-fit,minmax(84px,1fr))!important}
+.drop-zone{border:2px dashed #94a3b8;background:#f8fafc;border-radius:13px;padding:16px;text-align:center;color:#475569;transition:.15s ease}.drop-zone.dragover{border-color:#14b8a6;background:#f0fdfa}.drop-zone b{display:block;font-size:13px}.drop-zone span{display:block;font-size:10px;color:#64748b;margin-top:4px}
+.import-preview{max-height:170px;overflow:auto;border:1px solid #e2e8f0;border-radius:9px;margin-top:8px}.import-row{display:grid;grid-template-columns:1fr 1.3fr auto;gap:8px;padding:6px 8px;border-bottom:1px solid #eef2f7;font-size:10px}.import-row:last-child{border-bottom:0}.import-good{color:#047857;font-weight:800}.import-warn{color:#b45309;font-weight:800}
+.locale-badge{display:inline-flex;align-items:center;gap:4px;background:#ecfeff;color:#155e75;border:1px solid #a5f3fc;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}
+.gate-foot{margin-top:18px;color:#94a3b8;font-size:10px;line-height:1.5}
+@media(max-width:640px){.trip-gate{padding:20px 12px}.trip-hero{display:block}.trip-actions{margin-top:14px}.trip-hero h1{font-size:24px}.trip-switch{max-width:128px}}
+
+
+/* v2.3 interaction + routing polish */
+.drawer-closebar{position:sticky;bottom:-14px;margin:14px -14px -14px;padding:10px 14px 12px;background:linear-gradient(to bottom,rgba(255,255,255,.72),#fff 28%);border-top:1px solid var(--line);z-index:3}
+.drawer-closebar button{width:100%;border:1px solid #cbd5e1;background:#f8fafc;border-radius:10px;padding:9px 10px;font-size:11px;font-weight:900;color:#334155}
+.drawer-closebar button:hover{background:#f1f5f9}
+.route-timebar{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:end;margin:8px 0 10px}
+.route-timebar label{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:900;margin-bottom:3px}
+.route-timebar input{width:100%;border:1px solid var(--line);border-radius:9px;padding:7px 8px;font-size:10px;background:#fff}
+.route-timebar button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 9px;font-size:10px;font-weight:850;white-space:nowrap}
+.method-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.method-actions button{margin-top:0!important}.method-actions .primary-mini{background:#0f766e;color:white}
+.transit-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 7px}.transit-head b{font-size:11px}.transit-head small{font-size:9px;color:var(--muted)}
+.transit-altbar{display:flex;gap:5px;overflow:auto;padding-bottom:4px;margin-bottom:6px}.transit-altbar button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 8px;font-size:9px;font-weight:850}.transit-altbar button.active{background:#0f172a;color:#fff;border-color:#0f172a}
+.transit-step{border:1px solid #e2e8f0;border-radius:10px;padding:8px;margin:6px 0;background:#fff}.transit-step.walk{background:#f8fafc}.transit-step-top{display:flex;align-items:center;gap:7px}.transit-icon{width:25px;height:25px;border-radius:8px;background:#ecfeff;display:grid;place-items:center;font-size:13px}.transit-step b{font-size:10.5px}.transit-step p{font-size:10px;color:#475569;margin:4px 0 0;line-height:1.35}.transit-times{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;font-size:9px;color:#64748b}.api-note{font-size:9.5px;line-height:1.45;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:9px;padding:8px;margin-top:7px}
+.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.action-grid button{border:1px solid var(--line);background:#fff;border-radius:11px;padding:12px;text-align:left;font-weight:850}.action-grid button small{display:block;color:var(--muted);font-weight:500;font-size:9.5px;margin-top:3px;line-height:1.3}.action-grid button.danger{color:#b91c1c}.action-grid button.primary{background:#0f766e;color:#fff;border-color:#0f766e}.action-grid button.primary small{color:#ccfbf1}
+.inline-day{display:grid;grid-template-columns:1fr auto;gap:5px}.inline-day button{border:1px solid var(--line);background:#f8fafc;border-radius:8px;padding:0 9px;font-weight:900;color:#0f766e}
+.secret-row{display:flex;align-items:center;gap:7px}.secret-row input{flex:1}.secret-row button{border:1px solid var(--line);background:#f8fafc;border-radius:8px;padding:8px 9px;font-size:10px;font-weight:800}
+
+@media(max-width:900px){
+  .topbar{align-items:flex-start}.brand{min-width:0}.brand small{display:none}.toolbar{gap:5px}
+  .main{grid-template-columns:1fr;grid-template-rows:56% 44%}
+  .map-wrap{grid-row:1}.sidebar{grid-row:2;border-right:0;border-top:1px solid var(--line)}
+  .sidebar-head{padding:8px 10px}.summary,.notice{display:none}
+  .itinerary-wrap{padding-top:7px}
+  .info-drawer,.route-drawer{top:auto;bottom:10px;right:10px;left:10px;width:auto;max-height:72%}
+}
+@media(max-width:640px){
+  .topbar{padding:7px 8px;gap:6px}.brand h1{font-size:12px}.logo{width:32px;height:32px}.spacer{display:none}
+  .btn{padding:7px 8px;font-size:11px}.seg button{padding:7px 8px;font-size:11px}
+  .toolbar .desktop-lite{display:none}
+  .main{grid-template-rows:54% 46%}
+  .form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}
+}
+
+/* v2.7 universal touch / iPhone / iPad shell */
+.mobile-reorder{display:none;gap:5px}
+.mobile-reorder button{width:34px;height:34px;border:1px solid var(--line);background:#f8fafc;border-radius:9px;color:#334155;font-weight:900;font-size:15px;place-items:center;padding:0}
+.mobile-view-toggle{display:none;align-items:center;gap:5px;flex-basis:100%}
+.mobile-view-toggle button{flex:1;min-height:38px;border:1px solid var(--line);background:#fff;color:#334155;border-radius:9px;font-size:11px;font-weight:850}
+.mobile-view-toggle button.active{background:#0f172a;color:#fff;border-color:#0f172a}
+@media(max-width:900px),(pointer:coarse){
+  .mobile-reorder{display:flex}
+  .drag{touch-action:none;user-select:none;-webkit-user-select:none}
+  .pc-edit,.x,.swap,.leg button,.drawer-actions button,.method button{min-height:40px;min-width:40px}
+  .daytab,.btn,.seg button,.trip-switch{min-height:40px}
+  .field input,.field select,.field textarea,.route-timebar input{font-size:16px}
+}
+@media(max-width:900px){
+  .topbar{flex-wrap:wrap;padding-top:calc(7px + env(safe-area-inset-top,0px));padding-left:calc(8px + env(safe-area-inset-left,0px));padding-right:calc(8px + env(safe-area-inset-right,0px));}
+  .topbar>.toolbar:first-of-type{order:10;flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;padding-bottom:1px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .topbar>.toolbar:first-of-type::-webkit-scrollbar{display:none}
+  .topbar>.toolbar:last-of-type{display:none}
+  .daytabs{display:flex!important;overflow-x:auto;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .daytabs::-webkit-scrollbar{display:none}
+  .daytab{flex:0 0 auto;min-width:92px}
+  .mobile-view-toggle{display:flex;order:20}
+  body[data-mobile-view="plan"] .main{grid-template-rows:1fr}
+  body[data-mobile-view="plan"] .map-wrap{display:none}
+  body[data-mobile-view="plan"] .sidebar{grid-row:1;border-top:0}
+  body[data-mobile-view="map"] .main{grid-template-rows:1fr}
+  body[data-mobile-view="map"] .sidebar{display:none}
+  body[data-mobile-view="map"] .map-wrap{grid-row:1}
+  body[data-mobile-view="split"] .main{grid-template-rows:52% 48%}
+  .info-drawer,.route-drawer{top:auto;bottom:max(10px,env(safe-area-inset-bottom,0px));right:max(10px,env(safe-area-inset-right,0px));left:max(10px,env(safe-area-inset-left,0px));width:auto;max-height:min(78dvh,720px);border-radius:18px 18px 14px 14px}
+  .drawer-closebar{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .map-toolbar{top:10px;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px))}
+  .map-pill{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+@media(max-width:640px){
+  #importPlacesBtn,#legacyBtn{display:none!important}
+  .brand{flex:1;min-width:0}.brand>div:last-child{min-width:0}.brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trip-switch{max-width:42%;min-width:100px}
+  .main{grid-template-rows:46% 54%}
+  body[data-mobile-view="split"] .main{grid-template-rows:42% 58%}
+  .place-card{grid-template-columns:32px minmax(0,1fr) auto;padding:11px 10px;gap:8px}
+  .pc-title{font-size:14px}.pc-sub{font-size:12px}.pc-time{font-size:12px}
+  .pc-side{min-width:72px}.mobile-reorder{justify-content:flex-end}
+  .modal-backdrop{place-items:end center;padding:0}
+  .modal{width:100%;max-width:none;max-height:92dvh;border-radius:20px 20px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+  .modal-actions{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));background:#fff;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));z-index:3}
+  .field input,.field select,.field textarea,.route-timebar input{font-size:16px;min-height:44px}
+  .field textarea{min-height:96px}
+  .modal-actions button,.action-grid button{min-height:44px}
+  .methods{grid-template-columns:1fr}
+  .route-selectors{grid-template-columns:1fr 40px 1fr}
+  .toast{bottom:calc(12px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 20px)}
+}
+@media(display-mode:standalone){
+  .topbar{background:rgba(255,255,255,.985)}
+}
+
+</style>
+</head>
+<body>
+<div id="tripGate" class="trip-gate">
+  <div class="trip-shell">
+    <div class="trip-hero">
+      <div><div class="locale-badge">Route Studio v2.7 · universal</div><h1>Select a trip or make a new one</h1><p>Each trip has its own dates, places, stage bases and map. Drop in CSV/KML/JSON files or paste a list of places; the map fits the actual locations and can infer the destination region from them.</p></div>
+      <div class="trip-actions"><button type="button" onclick="openCreateTrip()">+ New trip</button><button class="secondary" type="button" onclick="openTripImport()">Import trip backup</button></div>
+    </div>
+    <div id="tripGrid" class="trip-grid"></div>
+    <div class="gate-foot">Stored in this browser by default. You can export trip backups at any time. The shipped Kaohsiung itinerary remains available as a starter trip.</div>
+  </div>
+</div>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">R</div>
+      <div><h1 id="appTitle">Route Studio</h1><small id="appSubtitle">Trip planner</small></div>
+    </div>
+    <button class="trip-switch" id="tripsBtn" type="button">Trips</button>
+    <div class="toolbar">
+      <div class="seg" aria-label="Mode">
+        <button id="browseMode" class="active" type="button">Browse</button>
+        <button id="routeMode" type="button">Route A→B</button>
+      </div>
+      <button class="btn" id="optimizeBtn" type="button" title="Chronologically locks explicit times, then optimizes travel, duration, opening windows, dayparts and bases">Smart optimize</button>
+      <button class="btn" id="addBtn" type="button">+ Add</button>
+      <button class="btn" id="importPlacesBtn" type="button">Import places</button>
+      <button class="btn hidden" id="legacyBtn" type="button">Prior-plan extras</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="toolbar">
+      <button class="btn" id="exportBtn" type="button">Export</button>
+      <button class="btn desktop-lite" id="backupBtn" type="button">Backup</button>
+      <button class="btn ghost desktop-lite" id="resetBtn" type="button">Reset</button>
+    </div>
+    <div class="mobile-view-toggle" id="mobileViewToggle" aria-label="Mobile layout">
+      <button type="button" data-view="plan">Plan</button>
+      <button type="button" data-view="split">Split</button>
+      <button type="button" data-view="map">Map</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div class="daytabs" id="dayTabs"></div>
+        <div class="summary">
+          <div class="kpi"><b id="kpiStops">0</b><span>scheduled saves</span></div>
+          <div class="kpi"><b id="kpiWindow">—</b><span>planned window</span></div>
+          <div class="kpi"><b id="kpiConstraint">—</b><span>key constraint</span></div>
+        </div>
+        <div class="notice" id="dayNotice"></div>
+      </div>
+      <div class="itinerary-wrap">
+        <div id="legacyStrip" class="legacy-strip hidden"></div>
+        <div class="base-card" id="baseCard">
+          <div class="base-pin">B</div>
+          <div><b id="baseName">Trip base</b><small id="baseSub">Click to manage this day’s start/end bases</small></div>
+        </div>
+        <div id="startLeg"></div>
+        <div id="itineraryList"></div>
+        <div id="endLeg"></div>
+      </div>
+    </aside>
+
+    <section class="map-wrap">
+      <div id="map"></div>
+      <div class="map-toolbar">
+        <div class="map-pill" id="mapStatus">Browse mode · click a pin for details</div>
+      </div>
+      <div id="infoDrawer" class="info-drawer hidden"></div>
+      <div id="routeDrawer" class="route-drawer hidden"></div>
+      <div id="toast" class="toast hidden"></div>
+    </section>
+  </div>
+</div>
+
+<div id="modalHost"></div>
+<input id="importFile" type="file" accept=".json,.csv,.kml,application/json,text/csv,application/vnd.google-earth.kml+xml" class="hidden">
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script>
+const SEED_PLACES = [{"id": "hotel", "name": "Kindness Hotel Kaohsiung Station", "zh": "康橋商旅 高雄站前館", "address": "No. 295, Jianguo 2nd Rd., Sanmin Dist., Kaohsiung City 807, Taiwan", "lat": 22.637586, "lon": 120.302739, "category": "Hotel / base", "rating": 4.5, "reviews": 3294, "hours": "Base hotel", "day": "Base", "order": 0, "time": "Start / end", "duration": 0, "slot": "base", "priority": "Base", "note": "Trip base. This uses the Kaohsiung Station branch from your current saved list, not the older Zhongshan-Bade draft.", "source": "https://www.kindness-hotel.com.tw/"}, {"id": "zhou", "name": "周記小籠包", "zh": "周記小籠包", "address": "No. 107, Nanhua Rd., Xinxing Dist., Kaohsiung City 800, Taiwan", "lat": 22.63355, "lon": 120.30355, "category": "Breakfast", "rating": 4.4, "reviews": 236, "hours": "06:30–12:30; closed Tue & Wed", "day": "2026-11-02", "order": 1, "time": "08:15", "duration": 45, "slot": "breakfast", "priority": "High", "note": "Best locked to Monday because the current published schedule lists Tuesday and Wednesday as rest days.", "source": "https://realplay.tw/57963/%E5%91%A8%E8%A8%98%E5%B0%8F%E7%B1%A0%E5%8C%85/"}, {"id": "lauzhou", "name": "Lau Zhou Pan Seared Buns", "zh": "老周水煎包", "address": "No. 260-1, Linsen 1st Rd., Xinxing Dist., Kaohsiung City, Taiwan", "lat": 22.63598, "lon": 120.30433, "category": "Deli / buns", "rating": 4.3, "reviews": 303, "hours": "10:30–18:30 (published listing)", "day": "2026-11-03", "order": 1, "time": "10:30", "duration": 30, "slot": "late-morning", "priority": "Medium", "note": "Very close to the hotel. Good late breakfast / snack before the southbound MRT leg.", "source": "https://ifoodie.tw/restaurant/65182b7d0fe5a9955bacbd82-%E8%80%81%E5%91%A8%E6%B0%B4%E7%85%8E%E5%8C%85"}, {"id": "dome", "name": "Dome of Light", "zh": "光之穹頂", "address": "B1F, No. 115, Zhongshan 1st Rd., Xinxing Dist., Kaohsiung City, Taiwan", "lat": 22.631388, "lon": 120.30191, "category": "Attraction", "rating": 4.4, "reviews": 4685, "hours": "Station concourse; generally accessible with MRT operating hours", "day": "2026-11-02", "order": 2, "time": "09:05", "duration": 25, "slot": "morning", "priority": "High", "note": "At Formosa Boulevard MRT. Efficient transfer point for the Orange Line toward Pier-2.", "source": "https://eng.taiwan.net.tw/m1.aspx?id=A12-00071&sNo=0002121%2C0002121"}, {"id": "pier2", "name": "The Pier2 Art Center", "zh": "駁二藝術特區", "address": "No. 1, Dayong Rd., Yancheng Dist., Kaohsiung City 803, Taiwan", "lat": 22.619889, "lon": 120.281722, "category": "Art center", "rating": 4.5, "reviews": 72114, "hours": "Mon–Thu 10:00–18:00; Fri–Sun / holidays 10:00–20:00", "day": "2026-11-02", "order": 3, "time": "10:00", "duration": 70, "slot": "morning", "priority": "High", "note": "Main waterfront cluster. The plan enters after opening, then walks east-to-west through the Pier-2 / warehouse zone.", "source": "https://en.pier2.org/"}, {"id": "sunny", "name": "Sunny Hills Kaohsiung Store", "zh": "微熱山丘 高雄駁二店", "address": "C11-1 Warehouse, No. 2-6, Dayi St., Yancheng Dist., Kaohsiung City 803, Taiwan", "lat": 22.61845, "lon": 120.28465, "category": "Pastries", "rating": 4.6, "reviews": 5206, "hours": "10:00–18:00 (current listing)", "day": "2026-11-02", "order": 4, "time": "11:15", "duration": 25, "slot": "late-morning", "priority": "Medium", "note": "Inside the Pier-2 Dayi warehouse area, so this is essentially a walking stop rather than a separate cross-city trip.", "source": "https://www.sunnyhills.com.tw/"}, {"id": "kw2", "name": "KW2 (Kaohsiung Port Warehouse No. 2)", "zh": "棧貳庫 KW2", "address": "No. 17, Penglai Rd., Gushan Dist., Kaohsiung City 804, Taiwan", "lat": 22.61919, "lon": 120.27657, "category": "Ferry terminal / waterfront", "rating": 4.4, "reviews": 325, "hours": "Sun–Thu 10:00–21:00; Fri–Sat 10:00–22:00", "day": "2026-11-02", "order": 5, "time": "11:50", "duration": 35, "slot": "midday", "priority": "High", "note": "Harbor stop and ferry-side anchor. Your earlier plan also had Cijin; use the legacy-extra toggle in the app if you want to restore it.", "source": "https://www.kw2.com.tw/copy-of"}, {"id": "ben", "name": "Ben’s Duck", "zh": "鴨肉本", "address": "No. 107, Fuye Rd., Yancheng Dist., Kaohsiung City 803, Taiwan", "lat": 22.628758, "lon": 120.282715, "category": "Taiwanese", "rating": 4.3, "reviews": 5204, "hours": "10:00–20:30 daily (current listing)", "day": "2026-11-02", "order": 6, "time": "12:45", "duration": 45, "slot": "lunch", "priority": "High", "note": "Lunch after the harbor cluster; keeps the route north-east toward the central city instead of backtracking.", "source": "https://dishwalking.com/en/shop/ya-rou-ben"}, {"id": "shinkuchan", "name": "Shinkuchan Shopping District", "zh": "新堀江商圈", "address": "Xinxing Dist., Kaohsiung City 800, Taiwan", "lat": 22.62272, "lon": 120.30252, "category": "Shopping district", "rating": 4.0, "reviews": 14608, "hours": "Most listings show afternoon to late evening; roughly 13:00–23:00", "day": "2026-11-02", "order": 7, "time": "14:15", "duration": 55, "slot": "afternoon", "priority": "Medium", "note": "Placed after lunch so the district is active, and before the southbound Red Line mall corridor.", "source": "https://mapcarta.com/W108126634"}, {"id": "feds", "name": "高雄大遠百", "zh": "高雄大遠百", "address": "No. 21, Sanduo 4th Rd., Lingya Dist., Kaohsiung City 802, Taiwan", "lat": 22.612861, "lon": 120.304444, "category": "Department store", "rating": 4.2, "reviews": 19915, "hours": "Mon–Thu 11:00–21:30; Fri–Sun 11:00–22:00", "day": "2026-11-02", "order": 8, "time": "15:30", "duration": 50, "slot": "afternoon", "priority": "Medium", "note": "Directly by MRT Red Line R8 Sanduo Shopping District, Exit 1.", "source": "https://origin.feds.com.tw/tw/51/MallInfo?tab=floor"}, {"id": "houdefu", "name": "Hou De Fu Soup Dumplings and Noodles", "zh": "厚得福湯包麵食專賣店", "address": "No. 214, Chenggong 1st Rd., Lingya Dist., Kaohsiung City 802, Taiwan", "lat": 22.617139, "lon": 120.29675, "category": "Chinese / dumplings", "rating": 4.2, "reviews": 8819, "hours": "11:00–20:30 daily (current listing)", "day": "2026-11-02", "order": 9, "time": "16:35", "duration": 45, "slot": "early-evening", "priority": "Medium", "note": "Treat this as a tasting / early dinner stop. You still have Liuhe later, so do not over-order.", "source": "https://www.google.com/maps/search/?api=1&query=%E5%8E%9A%E5%BE%97%E7%A6%8F%E6%B9%AF%E5%8C%85%E9%BA%B5%E9%A3%9F%E5%B0%88%E8%B3%A3%E5%BA%97"}, {"id": "dream", "name": "Dream Mall / Uni-President Dept. Store Kaohsiung", "zh": "夢時代購物中心", "address": "No. 789, Zhonghua 5th Rd., Qianzhen Dist., Kaohsiung City 806, Taiwan", "lat": 22.5951, "lon": 120.30686, "category": "Shopping mall", "rating": 4.5, "reviews": 72813, "hours": "Mon–Thu 11:00–22:00; Fri 11:00–22:30; weekends vary", "day": "2026-11-02", "order": 10, "time": "17:40", "duration": 70, "slot": "evening", "priority": "Medium", "note": "Short visit in the max-coverage preset. If shopping matters more than food, extend this and shorten Liuhe.", "source": "https://www.dreammall.com.tw/"}, {"id": "liuhe", "name": "Liuhe Night Market", "zh": "六合夜市", "address": "Liuhe 2nd Rd. & Zhongshan 1st Rd., Xinxing Dist., Kaohsiung City, Taiwan", "lat": 22.632075, "lon": 120.29915, "category": "Night market", "rating": 3.8, "reviews": 40908, "hours": "Evening / night market; current listings generally start late afternoon", "day": "2026-11-02", "order": 11, "time": "19:30", "duration": 90, "slot": "night", "priority": "High", "note": "Near Formosa Boulevard and the hotel, so it works well as the final stop before returning to base.", "source": "https://eng.taiwan.net.tw/m1.aspx?id=2245&sno=0002016"}, {"id": "skm", "name": "SKM Park Outlets Kaohsiung Caoya", "zh": "SKM Park Outlets 高雄草衙", "address": "No. 1-1, Zhong'an Rd., Qianzhen Dist., Kaohsiung City 806, Taiwan", "lat": 22.5835, "lon": 120.329667, "category": "Shopping mall / outlets", "rating": 4.3, "reviews": 39823, "hours": "Mon–Fri 11:00–21:30/22:00; weekend from 10:30", "day": "2026-11-03", "order": 2, "time": "11:35", "duration": 90, "slot": "midday", "priority": "Medium", "note": "Direct from Caoya MRT Exit 2. This is the far-south stop, so do it before heading north for Lotus Pond.", "source": "https://www.skmpark.com/"}, {"id": "dragon", "name": "Dragon & Tiger Pagoda", "zh": "龍虎塔", "address": "No. 9, Liantan Rd., Zuoying Dist., Kaohsiung City 813, Taiwan", "lat": 22.68051, "lon": 120.29238, "category": "Attraction", "rating": 4.3, "reviews": 20964, "hours": "08:00–17:30 daily (current listing)", "day": "2026-11-03", "order": 3, "time": "14:10", "duration": 55, "slot": "afternoon", "priority": "High", "note": "Hard closing-time constraint. The schedule deliberately reaches Lotus Pond before the late-afternoon rush.", "source": "https://www.google.com/maps/search/?api=1&query=Dragon%20%26%20Tiger%20Pagoda%20Kaohsiung"}, {"id": "didi", "name": "Di Di Roast Duck", "zh": "弟弟烤鴨", "address": "No. 77, Shengli Rd., Zuoying Dist., Kaohsiung City 813, Taiwan", "lat": 22.6849, "lon": 120.2942, "category": "Roast duck / takeaway", "rating": 4.7, "reviews": 539, "hours": "Tue–Sun from 10:30; Monday closed; published end time 18:30–19:30", "day": "2026-11-03", "order": 4, "time": "15:15", "duration": 30, "slot": "afternoon", "priority": "Medium", "note": "Tuesday is the right day. Published write-ups describe it primarily as takeaway; pre-order if you specifically want roast duck.", "source": "https://www.foodpanda.com.tw/restaurant/vgzc/di-di-kao-ya-vgzc"}, {"id": "hilai", "name": "Hi-Lai Vegetarian Restaurant Hanshin Arena Branch", "zh": "漢來蔬食 高雄漢神巨蛋店", "address": "5F, No. 777, Bo'ai 2nd Rd., Zuoying Dist., Kaohsiung City 813, Taiwan", "lat": 22.66981, "lon": 120.302297, "category": "Vegetarian", "rating": 4.4, "reviews": 1956, "hours": "Weekday lunch 11:30–14:30; dinner 17:00–21:00", "day": "2026-11-03", "order": 5, "time": "17:00", "duration": 60, "slot": "evening", "priority": "Optional", "note": "Optional sit-down meal. If Ruifeng food is the priority, shorten or skip this stop rather than trying to eat two full dinners.", "source": "https://www.hilai-foods.com/brand-content/5/hilai-vegetarian"}, {"id": "ruifeng", "name": "Ruifeng Night Market", "zh": "瑞豐夜市", "address": "Yucheng Rd. & Nanping Rd., Zuoying Dist., Kaohsiung City 813, Taiwan", "lat": 22.666113, "lon": 120.29978, "category": "Night market", "rating": 4.2, "reviews": 38284, "hours": "Tue, Thu–Sun 17:00–00:00; closed Mon & Wed", "day": "2026-11-03", "order": 6, "time": "18:15", "duration": 105, "slot": "night", "priority": "High", "note": "Must be Tuesday on your Kaohsiung dates. This is why the north-city cluster is anchored on 3 Nov.", "source": "https://www.google.com/maps/search/?api=1&query=Ruifeng%20Night%20Market%20Kaohsiung"}];
+const LEGACY_PLACES = [{"id": "foguang", "name": "Fo Guang Shan Buddha Museum", "zh": "佛光山佛陀紀念館", "address": "No. 1, Tongling Rd., Dashu Dist., Kaohsiung City, Taiwan", "lat": 22.75562, "lon": 120.44524, "category": "Legacy-plan attraction", "rating": null, "reviews": null, "hours": "Check official hours before departure", "day": "Legacy", "order": 0, "time": "", "duration": 180, "slot": "daytrip", "priority": "Legacy", "note": "This was in the earlier 2 Nov draft. It is far east of the city, so enabling it materially reduces how many screenshot saves fit.", "source": "https://eng.taiwan.net.tw/m1.aspx?id=A12-00163&sNo=0002121"}, {"id": "cijin", "name": "Cijin Old Street / Island", "zh": "旗津老街 / 旗津", "address": "Cijin Old Street, Qijin Dist., Kaohsiung City, Taiwan", "lat": 22.61326, "lon": 120.26858, "category": "Legacy-plan attraction", "rating": null, "reviews": null, "hours": "Open area; ferry schedule varies", "day": "Legacy", "order": 0, "time": "", "duration": 120, "slot": "afternoon", "priority": "Legacy", "note": "Your earlier 3 Nov plan had Cijin. It pairs naturally with KW2 but adds roughly 1.5–2+ hours including ferry/return.", "source": "https://eng.taiwan.net.tw/m1.aspx?id=A12-00072&sNo=0002016"}];
+const CURATED_ROUTES = {"hotel>zhou": {"method": "walk", "label": "Walk", "detail": "Short central-city hop. Walking avoids waiting for a vehicle."}, "zhou>dome": {"method": "walk", "label": "Walk", "detail": "Walk south-west to Formosa Boulevard Station; Dome of Light is inside the station concourse."}, "dome>pier2": {"method": "transit", "label": "MRT + walk", "detail": "Orange Line from Formosa Boulevard toward Hamasen; alight Yanchengpu, then walk into Pier-2."}, "pier2>sunny": {"method": "walk", "label": "Walk", "detail": "SunnyHills is inside the Pier-2 Dayi warehouse area."}, "sunny>kw2": {"method": "walk", "label": "Walk / LRT", "detail": "Continue west through Pier-2 toward Penglai/KW2. Walk is simplest unless you are tired."}, "kw2>ben": {"method": "walk", "label": "Walk / short taxi", "detail": "Walk back toward Yancheng; use a short taxi if heat or luggage makes the harbor walk unpleasant."}, "ben>shinkuchan": {"method": "transit", "label": "MRT", "detail": "Yanchengpu → Formosa Boulevard on Orange Line, transfer to Red Line → Central Park; then walk."}, "shinkuchan>feds": {"method": "transit", "label": "MRT", "detail": "Central Park R9 → Sanduo Shopping District R8; Far Eastern is by Exit 1."}, "feds>houdefu": {"method": "walk", "label": "Walk / taxi", "detail": "Reasonable city walk; a short taxi saves time if you are behind schedule."}, "houdefu>dream": {"method": "drive", "label": "Taxi / ride-hail", "detail": "Most time-efficient for this cross-corridor leg. Public transport adds transfers."}, "dream>liuhe": {"method": "transit", "label": "LRT + MRT", "detail": "Dream Mall LRT → Kaisyuan transfer → Red Line north to Formosa Boulevard; taxi is faster if tired."}, "liuhe>hotel": {"method": "walk", "label": "Walk", "detail": "Easy final walk north to the hotel / Kaohsiung Main Station area."}, "hotel>lauzhou": {"method": "walk", "label": "Walk", "detail": "Very close to the hotel; no need for transit."}, "lauzhou>skm": {"method": "transit", "label": "MRT", "detail": "Return to Kaohsiung Main R11 → Red Line south to Caoya R4A; Exit 2 leads directly to SKM Park."}, "skm>dragon": {"method": "transit", "label": "MRT + taxi", "detail": "Red Line north to Zuoying / north-city area, then short taxi to Lotus Pond. This protects the pagoda closing time."}, "dragon>didi": {"method": "walk", "label": "Walk / short taxi", "detail": "Both are in the Lotus Pond / old Zuoying cluster."}, "didi>hilai": {"method": "drive", "label": "Taxi", "detail": "Fastest and simplest, especially if carrying roast-duck takeaway."}, "hilai>ruifeng": {"method": "walk", "label": "Walk", "detail": "Ruifeng is a short walk from Hanshin Arena / Kaohsiung Arena."}, "ruifeng>hotel": {"method": "transit", "label": "MRT", "detail": "Kaohsiung Arena R14 → Kaohsiung Main R11, then walk to the hotel."}};
+
+const LEGACY_STORAGE_KEY = "unused-taiwan-master-legacy";
+const LIBRARY_KEY = "route-studio-taiwan-master-trip-v1";
+const ACTIVE_KEY = "route-studio-taiwan-master-active-v1";
+const ROUTE_CACHE_KEY = "route-studio-route-cache-v2";
+const GOOGLE_ROUTES_KEY = "route-studio-google-routes-key-v1";
+const SLOT_RANK = {"breakfast":0,"morning":1,"late-morning":2,"midday":3,"lunch":4,"afternoon":5,"early-evening":6,"evening":7,"night":8,"daytrip":9};
+const PALETTE=["#0f766e","#c2410c","#2563eb","#7c3aed","#be123c","#4d7c0f","#a16207"];
+let DAY_LABELS={};
+
+let library = loadLibrary();
+let currentTripId = null;
+let currentTrip = null;
+let state = {places:[],day:"all",mode:"browse",selected:null,routeA:null,routeB:null,showLegacy:false};
+let undoSnapshot = null;
+let markers = new Map();
+let guideLayer = null;
+let routeLayer = null;
+let routeCache = loadRouteCache();
+let lastRouteRequest = 0;
+let lastGeocodeRequest = 0;
+let sortable = null;
+let googleRoutesLoader = null;
+let transitAlternatives = [];
+let activeTransitAlternative = 0;
+
+function seedTrip(){
+  const t={"id":"taiwan_master_2026_nov_02_09","name":"Taiwan Grand Route · 2–9 Nov 2026","region":"Taiwan · Kaohsiung / Ruili / Taichung / Taipei","startDate":"2026-11-02","endDate":"2026-11-09","baseId":"khh_hotel","dayBases":{"2026-11-02":{"startBaseId":"tpe_airport","endBaseId":"khh_hotel"},"2026-11-03":{"startBaseId":"khh_hotel","endBaseId":"khh_hotel"},"2026-11-04":{"startBaseId":"khh_hotel","endBaseId":"ruili_villa"},"2026-11-05":{"startBaseId":"ruili_villa","endBaseId":"euphemia"},"2026-11-06":{"startBaseId":"euphemia","endBaseId":"taipei_hotel"},"2026-11-07":{"startBaseId":"taipei_hotel","endBaseId":"taipei_hotel"},"2026-11-08":{"startBaseId":"taipei_hotel","endBaseId":"taipei_hotel"},"2026-11-09":{"startBaseId":"taipei_hotel","endBaseId":"tpe_airport"}},"places":[{"id":"khh_hotel","name":"Kindness Hotel Kaohsiung Station","zh":"康橋商旅 高雄站前館","address":"No. 295, Jianguo 2nd Rd., Sanmin District, Kaohsiung City 807, Taiwan","locale":"Kaohsiung, Taiwan","lat":22.637586,"lon":120.302739,"category":"Hotel / base","rating":null,"reviews":null,"hours":"Base / journey gateway","day":"Base","order":0,"time":"Start / end","duration":0,"slot":"base","priority":"Base","note":"Kaohsiung base · 2–3 Nov. Do not confuse with Zhongshan/Bade branch. Branch follows current Route Studio starter trip.","source":"https://www.kindness-hotel.com.tw/","coordQuality":"verified_app_seed","isBase":true},{"id":"ruili_villa","name":"Ruili Tea Villa","zh":"山間茶墅民宿","address":"No. 85-1, Youyelin, Ruili Village, Meishan Township, Chiayi County 603, Taiwan","locale":"Ruili, Meishan, Chiayi County, Taiwan","lat":23.540877,"lon":120.668595,"category":"Hotel / base","rating":null,"reviews":null,"hours":"Base / journey gateway","day":"Base","order":0,"time":"Start / end","duration":0,"slot":"base","priority":"Base","note":"Mountain B&B · night of 4 Nov. Official host location 23.540877,120.668595. Check in after 15:00, arrange luggage storage with host and driver beforehand.","source":"https://www.ruiliteavilla.com/traffic.html","coordQuality":"verified_official","isBase":true},{"id":"euphemia","name":"Hotel Euphemia","zh":"由扉寓所","address":"No. 111, Hanxiang Rd., Xitun District, Taichung City 407, Taiwan","locale":"Xitun, Taichung, Taiwan","lat":24.1849942,"lon":120.6425971,"category":"Hotel / base","rating":null,"reviews":null,"hours":"Base / journey gateway","day":"Base","order":0,"time":"Start / end","duration":0,"slot":"base","priority":"Base","note":"Taichung base · night of 5 Nov. Coordinates from Taiwan Tourism Administration open data. Near Explore Hotel on Hanxiang Road and Fengjia Night Market. Published check-in 15:00, check-out 11:00.","source":"https://media.taiwan.net.tw/zh-tw/portal/travel/details/hotel_a15010000h_034367","coordQuality":"verified_official","isBase":true},{"id":"taipei_hotel","name":"Fun Stay Inn Hanzhong","zh":"日光樂居漢中館","address":"No. 6, Lane 147, Hanzhong St., Wanhua District, Taipei City 108, Taiwan","locale":"Ximending, Taipei, Taiwan","lat":25.0422,"lon":121.505,"category":"Hotel / base","rating":null,"reviews":null,"hours":"Base / journey gateway","day":"Base","order":0,"time":"Start / end","duration":0,"slot":"base","priority":"Base","note":"Taipei base 6–8 Nov. IMPORTANT: property has historical reports of stairs/no passenger elevator under prior name Galaxy Mini Inn; confirm current accessibility and room access for older traveller before travel. Pin near Ximen MRT, coordinate approximate.","source":"https://www.traveloka.com/en-sg/hotel/taiwan/fun-stay-inn-hanzhong-1000000492058","coordQuality":"approximate","isBase":true},{"id":"tpe_airport","name":"Taiwan Taoyuan International Airport Terminal 1","zh":"桃園國際機場第一航廈","address":"Terminal 1, Taoyuan International Airport, Taoyuan City, Taiwan","locale":"Taoyuan, Taiwan","lat":25.0797,"lon":121.2342,"category":"Airport / gateway base","rating":null,"reviews":null,"hours":"Base / journey gateway","day":"Base","order":0,"time":"Start / end","duration":0,"slot":"base","priority":"Base","note":"Journey gateway, NOT hotel. CI756 arrives here 2 Nov; CI753 departs here 9 Nov. Verify terminal from e-ticket.","source":"https://www.taoyuan-airport.com/","coordQuality":"landmark","isBase":true},{"id":"arrival_ci756","name":"CI756 arrival · Taoyuan Airport T1","zh":"","address":"Terminal 1, Taiwan Taoyuan International Airport","locale":"Taoyuan, Taiwan","lat":25.0797,"lon":121.2342,"category":"Flight / arrival","rating":null,"reviews":null,"hours":"Flight schedule, not reservation","day":"2026-11-02","order":1,"time":"06:40","duration":75,"slot":"morning","priority":"High","note":"Published CI756 timetable 02:00 SIN → 06:40 TPE. Immigration, baggage, airport MRT transfer. Verify e-ticket; do not schedule Kaohsiung breakfast at 08:15.","source":"https://www.flight.info/CI756","coordQuality":"landmark"},{"id":"taoyuan_hsr_a","name":"Taoyuan HSR Station · southbound","zh":"","address":"No. 6, Section 1, Gaotie N. Rd., Zhongli District, Taoyuan","locale":"Taoyuan, Taiwan","lat":25.0138,"lon":121.2145,"category":"HSR transfer","rating":null,"reviews":null,"hours":"Station generally open","day":"2026-11-02","order":2,"time":"08:30","duration":35,"slot":"morning","priority":"High","note":"Airport MRT A12 (Terminal 1) → A18 (HSR Taoyuan), then HSR to Zuoying. Train times illustrative; book HSR appropriate to airport clearance.","source":"https://en.thsrc.com.tw/","coordQuality":"landmark"},{"id":"zuoying_hsr_a","name":"HSR Zuoying Station · Kaohsiung arrival","zh":"","address":"Zuoying HSR Station, Kaohsiung City","locale":"Kaohsiung, Taiwan","lat":22.6875,"lon":120.3075,"category":"HSR transfer","rating":null,"reviews":null,"hours":"","day":"2026-11-02","order":3,"time":"10:30","duration":25,"slot":"morning","priority":"High","note":"HSR Taoyuan → Zuoying usually roughly 1h30–2h depending service. Transfer with luggage by taxi or MRT Red Line to Kaohsiung Station area. Not a confirmed departure.","source":"https://en.thsrc.com.tw/","coordQuality":"landmark"},{"id":"khh_bagdrop","name":"Kindness Hotel Kaohsiung Station · luggage drop","zh":"","address":"No. 295, Jianguo 2nd Rd., Kaohsiung","locale":"Kaohsiung, Taiwan","lat":22.637586,"lon":120.302739,"category":"Hotel / logistics","rating":null,"reviews":null,"hours":"","day":"2026-11-02","order":4,"time":"11:30","duration":20,"slot":"midday","priority":"High","note":"Check bag storage/early check-in. Main day sightseeing begins here; fatigue contingency following overnight flight.","source":"https://www.kindness-hotel.com.tw/","coordQuality":"verified_app_seed"},{"id":"zhou","name":"周記小籠包","zh":"周記小籠包","address":"No. 107, Nanhua Rd., Xinxing Dist., Kaohsiung City 800, Taiwan","lat":22.63355,"lon":120.30355,"category":"Breakfast","rating":4.4,"reviews":236,"hours":"06:30–12:30; closed Tue & Wed","day":"2026-11-02","order":5,"time":"11:55","duration":30,"slot":"breakfast","priority":"Optional","note":"Best locked to Monday because the current published schedule lists Tuesday and Wednesday as rest days. Time-sensitive: closes ~12:30 Mon and closed Tuesday. Only visit IF already nearby and able to enter before closing. Otherwise skip; do not race with luggage/senior.","source":"https://realplay.tw/57963/%E5%91%A8%E8%A8%98%E5%B0%8F%E7%B1%A0%E5%8C%85/","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"ben","name":"Ben’s Duck","zh":"鴨肉本","address":"No. 107, Fuye Rd., Yancheng Dist., Kaohsiung City 803, Taiwan","lat":22.628758,"lon":120.282715,"category":"Taiwanese","rating":4.3,"reviews":5204,"hours":"10:00–20:30 daily (current listing)","day":"2026-11-02","order":6,"time":"12:45","duration":45,"slot":"lunch","priority":"High","note":"Lunch after the harbor cluster; keeps the route north-east toward the central city instead of backtracking. First substantial Kaohsiung lunch.","source":"https://dishwalking.com/en/shop/ya-rou-ben","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"pier2","name":"The Pier2 Art Center","zh":"駁二藝術特區","address":"No. 1, Dayong Rd., Yancheng Dist., Kaohsiung City 803, Taiwan","lat":22.619889,"lon":120.281722,"category":"Art center","rating":4.5,"reviews":72114,"hours":"Mon–Thu 10:00–18:00; Fri–Sun / holidays 10:00–20:00","day":"2026-11-02","order":7,"time":"13:45","duration":70,"slot":"morning","priority":"High","note":"Main waterfront cluster. The plan enters after opening, then walks east-to-west through the Pier-2 / warehouse zone.","source":"https://en.pier2.org/","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"sunny","name":"Sunny Hills Kaohsiung Store","zh":"微熱山丘 高雄駁二店","address":"C11-1 Warehouse, No. 2-6, Dayi St., Yancheng Dist., Kaohsiung City 803, Taiwan","lat":22.61845,"lon":120.28465,"category":"Pastries","rating":4.6,"reviews":5206,"hours":"10:00–18:00 (current listing)","day":"2026-11-02","order":8,"time":"15:05","duration":25,"slot":"late-morning","priority":"Medium","note":"Inside the Pier-2 Dayi warehouse area, so this is essentially a walking stop rather than a separate cross-city trip.","source":"https://www.sunnyhills.com.tw/","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"kw2","name":"KW2 (Kaohsiung Port Warehouse No. 2)","zh":"棧貳庫 KW2","address":"No. 17, Penglai Rd., Gushan Dist., Kaohsiung City 804, Taiwan","lat":22.61919,"lon":120.27657,"category":"Ferry terminal / waterfront","rating":4.4,"reviews":325,"hours":"Sun–Thu 10:00–21:00; Fri–Sat 10:00–22:00","day":"2026-11-02","order":9,"time":"15:45","duration":35,"slot":"midday","priority":"High","note":"Harbor stop and ferry-side anchor. Your earlier plan also had Cijin; use the legacy-extra toggle in the app if you want to restore it.","source":"https://www.kw2.com.tw/copy-of","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"houdefu","name":"Hou De Fu Soup Dumplings and Noodles","zh":"厚得福湯包麵食專賣店","address":"No. 214, Chenggong 1st Rd., Lingya Dist., Kaohsiung City 802, Taiwan","lat":22.617139,"lon":120.29675,"category":"Chinese / dumplings","rating":4.2,"reviews":8819,"hours":"11:00–20:30 daily (current listing)","day":"2026-11-02","order":10,"time":"16:35","duration":30,"slot":"early-evening","priority":"Optional","note":"Treat this as a tasting / early dinner stop. You still have Liuhe later, so do not over-order. Additional saved dumpling stop; SKIP if not hungry or time runs late to protect Dome of Light and Liuhe.","source":"https://www.google.com/maps/search/?api=1&query=%E5%8E%9A%E5%BE%97%E7%A6%8F%E6%B9%AF%E5%8C%85%E9%BA%B5%E9%A3%9F%E5%B0%88%E8%B3%A3%E5%BA%97","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"dome","name":"Dome of Light","zh":"光之穹頂","address":"B1F, No. 115, Zhongshan 1st Rd., Xinxing Dist., Kaohsiung City, Taiwan","lat":22.631388,"lon":120.30191,"category":"Attraction","rating":4.4,"reviews":4685,"hours":"Station concourse; generally accessible with MRT operating hours","day":"2026-11-02","order":11,"time":"17:35","duration":20,"slot":"morning","priority":"High","note":"At Formosa Boulevard MRT. Efficient transfer point for the Orange Line toward Pier-2. Orange Line return via Formosa Boulevard; works any time MRT station open.","source":"https://eng.taiwan.net.tw/m1.aspx?id=A12-00071&sNo=0002121%2C0002121","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"shinkuchan","name":"Shinkuchan Shopping District","zh":"新堀江商圈","address":"Xinxing Dist., Kaohsiung City 800, Taiwan","lat":22.62272,"lon":120.30252,"category":"Shopping district","rating":4.0,"reviews":14608,"hours":"Most listings show afternoon to late evening; roughly 13:00–23:00","day":"2026-11-02","order":12,"time":"18:05","duration":40,"slot":"afternoon","priority":"Medium","note":"Placed after lunch so the district is active, and before the southbound Red Line mall corridor.","source":"https://mapcarta.com/W108126634","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"liuhe","name":"Liuhe Night Market","zh":"六合夜市","address":"Liuhe 2nd Rd. & Zhongshan 1st Rd., Xinxing Dist., Kaohsiung City, Taiwan","lat":22.632075,"lon":120.29915,"category":"Night market","rating":3.8,"reviews":40908,"hours":"Evening / night market; current listings generally start late afternoon","day":"2026-11-02","order":13,"time":"19:25","duration":75,"slot":"night","priority":"High","note":"Near Formosa Boulevard and the hotel, so it works well as the final stop before returning to base. Food and night-market shopping; short journey back to hotel.","source":"https://eng.taiwan.net.tw/m1.aspx?id=2245&sno=0002016","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"lauzhou","name":"Lau Zhou Pan Seared Buns","zh":"老周水煎包","address":"No. 260-1, Linsen 1st Rd., Xinxing Dist., Kaohsiung City, Taiwan","lat":22.63598,"lon":120.30433,"category":"Deli / buns","rating":4.3,"reviews":303,"hours":"10:30–18:30 (published listing)","day":"2026-11-03","order":1,"time":"10:30","duration":30,"slot":"late-morning","priority":"Medium","note":"Very close to the hotel. Good late breakfast / snack before the southbound MRT leg.","source":"https://ifoodie.tw/restaurant/65182b7d0fe5a9955bacbd82-%E8%80%81%E5%91%A8%E6%B0%B4%E7%85%8E%E5%8C%85","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"skm","name":"SKM Park Outlets Kaohsiung Caoya","zh":"SKM Park Outlets 高雄草衙","address":"No. 1-1, Zhong'an Rd., Qianzhen Dist., Kaohsiung City 806, Taiwan","lat":22.5835,"lon":120.329667,"category":"Shopping mall / outlets","rating":4.3,"reviews":39823,"hours":"Mon–Fri 11:00–21:30/22:00; weekend from 10:30","day":"2026-11-03","order":2,"time":"11:30","duration":75,"slot":"midday","priority":"Medium","note":"Direct from Caoya MRT Exit 2. This is the far-south stop, so do it before heading north for Lotus Pond.","source":"https://www.skmpark.com/","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"dream","name":"Dream Mall / Uni-President Dept. Store Kaohsiung","zh":"夢時代購物中心","address":"No. 789, Zhonghua 5th Rd., Qianzhen Dist., Kaohsiung City 806, Taiwan","lat":22.5951,"lon":120.30686,"category":"Shopping mall","rating":4.5,"reviews":72813,"hours":"Mon–Thu 11:00–22:00; Fri 11:00–22:30; weekends vary","day":"2026-11-03","order":3,"time":"13:15","duration":45,"slot":"evening","priority":"Optional","note":"Short visit in the max-coverage preset. If shopping matters more than food, extend this and shorten Liuhe. If group is tiring or running behind, SKIP Dream Mall to protect Lotus Pond time; this south-side shopping detour is optional.","source":"https://www.dreammall.com.tw/","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"feds","name":"高雄大遠百","zh":"高雄大遠百","address":"No. 21, Sanduo 4th Rd., Lingya Dist., Kaohsiung City 802, Taiwan","lat":22.612861,"lon":120.304444,"category":"Department store","rating":4.2,"reviews":19915,"hours":"Mon–Thu 11:00–21:30; Fri–Sun 11:00–22:00","day":"2026-11-03","order":4,"time":"14:25","duration":30,"slot":"afternoon","priority":"Optional","note":"Directly by MRT Red Line R8 Sanduo Shopping District, Exit 1. Additional saved department-store option; skip when prioritising Lotus Pond/Dragon and Tiger Pagodas.","source":"https://origin.feds.com.tw/tw/51/MallInfo?tab=floor","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"dragon","name":"Dragon & Tiger Pagoda","zh":"龍虎塔","address":"No. 9, Liantan Rd., Zuoying Dist., Kaohsiung City 813, Taiwan","lat":22.68051,"lon":120.29238,"category":"Attraction","rating":4.3,"reviews":20964,"hours":"08:00–17:30 daily (current listing)","day":"2026-11-03","order":5,"time":"15:45","duration":55,"slot":"afternoon","priority":"High","note":"Hard closing-time constraint. The schedule deliberately reaches Lotus Pond before the late-afternoon rush. Allow ~45–60min travel from far south; do not arrive after tower access closes.","source":"https://www.google.com/maps/search/?api=1&query=Dragon%20%26%20Tiger%20Pagoda%20Kaohsiung","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"didi","name":"Di Di Roast Duck","zh":"弟弟烤鴨","address":"No. 77, Shengli Rd., Zuoying Dist., Kaohsiung City 813, Taiwan","lat":22.6849,"lon":120.2942,"category":"Roast duck / takeaway","rating":4.7,"reviews":539,"hours":"Tue–Sun from 10:30; Monday closed; published end time 18:30–19:30","day":"2026-11-03","order":6,"time":"16:55","duration":25,"slot":"afternoon","priority":"Medium","note":"Tuesday is the right day. Published write-ups describe it primarily as takeaway; pre-order if you specifically want roast duck. Takeaway-oriented; consider sharing to save appetite for night market.","source":"https://www.foodpanda.com.tw/restaurant/vgzc/di-di-kao-ya-vgzc","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"hilai","name":"Hi-Lai Vegetarian Restaurant Hanshin Arena Branch","zh":"漢來蔬食 高雄漢神巨蛋店","address":"5F, No. 777, Bo'ai 2nd Rd., Zuoying Dist., Kaohsiung City 813, Taiwan","lat":22.66981,"lon":120.302297,"category":"Vegetarian","rating":4.4,"reviews":1956,"hours":"Weekday lunch 11:30–14:30; dinner 17:00–21:00","day":"2026-11-03","order":7,"time":"17:40","duration":40,"slot":"evening","priority":"Optional","note":"Optional sit-down meal. If Ruifeng food is the priority, shorten or skip this stop rather than trying to eat two full dinners. Optional sit-down meal (vegetarian); skip if you prefer fuller night market dinner. Check last order.","source":"https://www.hilai-foods.com/brand-content/5/hilai-vegetarian","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"ruifeng","name":"Ruifeng Night Market","zh":"瑞豐夜市","address":"Yucheng Rd. & Nanping Rd., Zuoying Dist., Kaohsiung City 813, Taiwan","lat":22.666113,"lon":120.29978,"category":"Night market","rating":4.2,"reviews":38284,"hours":"Tue, Thu–Sun 17:00–00:00; closed Mon & Wed","day":"2026-11-03","order":8,"time":"19:20","duration":100,"slot":"night","priority":"High","note":"Must be Tuesday on your Kaohsiung dates. This is why the north-city cluster is anchored on 3 Nov. Tuesday opening day; typically closed Monday and Wednesday. Return hotel by taxi or MRT.","source":"https://www.google.com/maps/search/?api=1&query=Ruifeng%20Night%20Market%20Kaohsiung","locale":"Kaohsiung, Taiwan","coordQuality":"verified_app_seed"},{"id":"khh_check_out","name":"Hotel departure · Kaohsiung Station","zh":"","address":"No. 295, Jianguo 2nd Rd., Kaohsiung","locale":"Kaohsiung, Taiwan","lat":22.637586,"lon":120.302739,"category":"Check-out / departure","rating":null,"reviews":null,"hours":"Early check-out","day":"2026-11-04","order":1,"time":"06:35","duration":20,"slot":"morning","priority":"High","note":"Pack previous night. Taxi/MRT to HSR Zuoying (allow morning buffer); destination Ruili mountain villa.","source":"","coordQuality":"verified_app_seed"},{"id":"zuoying_hsr_north","name":"HSR Zuoying Station · to Chiayi","zh":"","address":"HSR Zuoying Station, Kaohsiung","locale":"Kaohsiung, Taiwan","lat":22.6875,"lon":120.3075,"category":"HSR / transfer","rating":null,"reviews":null,"hours":"","day":"2026-11-04","order":2,"time":"07:15","duration":35,"slot":"morning","priority":"High","note":"Allow buffer for 5 passengers and baggage. HSR Zuoying → Chiayi ~30–45 min depending service; reserve actual train separately.","source":"https://en.thsrc.com.tw/","coordQuality":"landmark"},{"id":"chiayi_hsr_pickup","name":"HSR Chiayi Station · meet driver","zh":"","address":"No. 168, Gaotie W. Rd., Taibao City, Chiayi County","locale":"Chiayi County, Taiwan","lat":23.45924,"lon":120.32379,"category":"Driver pickup","rating":null,"reviews":null,"hours":"","day":"2026-11-04","order":3,"time":"08:25","duration":30,"slot":"morning","priority":"High","note":"Pre-arranged mountain driver meets five passengers. Confirm 5-seat luggage capacity, safe child/senior boarding and full-day touring to Alishan, then Ruili villa.","source":"https://en.thsrc.com.tw/","coordQuality":"verified_wikimedia"},{"id":"ruili_luggage","name":"Ruili Tea Villa · drop luggage","zh":"","address":"No. 85-1, Youyelin, Meishan, Chiayi County","locale":"Ruili, Meishan, Chiayi County, Taiwan","lat":23.540877,"lon":120.668595,"category":"Luggage / hotel","rating":null,"reviews":null,"hours":"","day":"2026-11-04","order":4,"time":"10:40","duration":25,"slot":"morning","priority":"High","note":"Ask host whether bags can be held pre-check-in; property check-in after 15:00. If early bag storage unavailable, keep luggage with pre-arranged driver.","source":"https://www.ruiliteavilla.com/traffic.html","coordQuality":"verified_official"},{"id":"jiaoliping","name":"Jiaoliping Station","zh":"","address":"Jiaoliping Railway Station, Zhuqi Township, Chiayi County","locale":"Jiaoliping, Chiayi County, Taiwan","lat":23.531556,"lon":120.643833,"category":"Scenic railway stop","rating":null,"reviews":null,"hours":"Station; railway subject to operating timetable","day":"2026-11-04","order":5,"time":"11:30","duration":30,"slot":"midday","priority":"Medium","note":"Photo/heritage stop only. Forest Railway uphill trains pass at roughly 10:48 / 11:43 from the currently published timetable, so a ride onward cannot be assumed after reaching Ruili.","source":"https://afrch.forest.gov.tw/EN/0000058","coordQuality":"verified_public"},{"id":"fenqihu_station","name":"Fenqihu Railway Station","zh":"","address":"Fenqihu Station, Zhuqi Township, Chiayi County","locale":"Fenqihu, Chiayi County, Taiwan","lat":23.50528,"lon":120.69513,"category":"Scenic railway stop","rating":null,"reviews":null,"hours":"Rail service is scheduled, not turn-up-and-go","day":"2026-11-04","order":6,"time":"12:40","duration":20,"slot":"midday","priority":"High","note":"Station and train atmosphere. Driver transfer, not scheduled railway ride.","source":"https://afrch.forest.gov.tw/EN/0000058","coordQuality":"verified_public"},{"id":"fenqihu_street","name":"Fenqihu Old Street · railway bento lunch","zh":"","address":"Fenqihu Old Street, Zhuqi Township, Chiayi County","locale":"Fenqihu, Chiayi County, Taiwan","lat":23.5049,"lon":120.6948,"category":"Old street / lunch","rating":null,"reviews":null,"hours":"Shops mainly daytime","day":"2026-11-04","order":7,"time":"13:00","duration":80,"slot":"afternoon","priority":"High","note":"Eat traditional railway bento, sample snacks. Short walking area, some slopes/steps.","source":"https://eng.taiwan.net.tw/","coordQuality":"nearby_landmark"},{"id":"alishan_forest","name":"Alishan National Forest Recreation Area · short visit","zh":"","address":"Alishan National Forest Recreation Area, Alishan Township, Chiayi County","locale":"Alishan, Chiayi County, Taiwan","lat":23.511,"lon":120.802,"category":"Forest recreation","rating":null,"reviews":null,"hours":"Entry ticket; operating facilities vary","day":"2026-11-04","order":8,"time":"15:20","duration":80,"slot":"afternoon","priority":"High","note":"LATE-DAY SHORT VERSION ONLY. Drive from Fenqihu ~40–60 min, park entrance then choose easy area near visitor centre. Not enough time for full giant-tree loop AND railway ride. Start return by 16:40–17:00, mountain roads after dark; if driver cannot stay, skip this and linger in Fenqihu.","source":"https://recreation.forest.gov.tw/","coordQuality":"area_approx"},{"id":"ruili_checkin","name":"Ruili Tea Villa · check-in / dinner","zh":"","address":"No. 85-1, Youyelin, Meishan","locale":"Ruili, Meishan, Chiayi County, Taiwan","lat":23.540877,"lon":120.668595,"category":"Hotel / dinner","rating":null,"reviews":null,"hours":"Check-in after 15:00","day":"2026-11-04","order":9,"time":"18:40","duration":70,"slot":"evening","priority":"High","note":"Pre-arrange dinner or buy takeaway on return; few evening food choices in Ruili mountains. Coordinate check-in with host.","source":"https://www.ruiliteavilla.com/traffic.html","coordQuality":"verified_official"},{"id":"ruili_sunrise","name":"Ruili Tea Villa · sunrise / tea terrace","zh":"","address":"Ruili Tea Villa, Meishan, Chiayi County","locale":"Ruili, Chiayi County, Taiwan","lat":23.540877,"lon":120.668595,"category":"Sunrise / scenery","rating":null,"reviews":null,"hours":"Weather dependent","day":"2026-11-05","order":1,"time":"06:15","duration":40,"slot":"morning","priority":"Medium","note":"Weather permitting from/near Ruili accommodation; NOT the famed Zhushan Alishan summit sunrise. Check orientation and local viewpoints with host.","source":"https://www.ruiliteavilla.com/","coordQuality":"verified_official"},{"id":"ruili_breakfast","name":"Ruili Tea Villa · breakfast / check out","zh":"","address":"Ruili Tea Villa, Meishan, Chiayi County","locale":"Ruili, Chiayi County, Taiwan","lat":23.540877,"lon":120.668595,"category":"Breakfast / check-out","rating":null,"reviews":null,"hours":"","day":"2026-11-05","order":2,"time":"08:00","duration":70,"slot":"morning","priority":"High","note":"Slow breakfast and mountain scenery; check out by 11:00. Carry medication, snacks, motion-sickness precautions for winding roads.","source":"https://www.ruiliteavilla.com/","coordQuality":"verified_official"},{"id":"chiayi_hsr_return","name":"HSR Chiayi Station · toward Taichung","zh":"","address":"HSR Chiayi Station, Taibao City, Chiayi County","locale":"Chiayi, Taiwan","lat":23.45924,"lon":120.32379,"category":"HSR / transfer","rating":null,"reviews":null,"hours":"","day":"2026-11-05","order":3,"time":"11:30","duration":35,"slot":"morning","priority":"High","note":"Driver return from mountain (~1.5–2.5h route-dependent). Only book train after driver pickup/road-time confirmed.","source":"https://en.thsrc.com.tw/","coordQuality":"verified_wikimedia"},{"id":"taichung_hsr_arrival","name":"HSR Taichung Station · arrival","zh":"","address":"HSR Taichung Station, Wuri District, Taichung City","locale":"Taichung, Taiwan","lat":24.1124,"lon":120.6157,"category":"HSR / transfer","rating":null,"reviews":null,"hours":"","day":"2026-11-05","order":4,"time":"12:35","duration":20,"slot":"midday","priority":"High","note":"HSR Chiayi → Taichung train ~25–35 min + station buffer. Taxi to Euphemia in Fengjia/Xitun; 13–15 min is optimistic in traffic.","source":"https://en.thsrc.com.tw/","coordQuality":"landmark"},{"id":"euphemia_bagdrop","name":"Hotel Euphemia · luggage drop","zh":"","address":"No.111 Hanxiang Rd., Xitun District, Taichung","locale":"Taichung, Taiwan","lat":24.1849942,"lon":120.6425971,"category":"Hotel / luggage","rating":null,"reviews":null,"hours":"Check-in from 15:00","day":"2026-11-05","order":5,"time":"13:25","duration":25,"slot":"afternoon","priority":"High","note":"Reception luggage drop before 15:00 check-in, then leave for lunch and flowers. Hotel is near Explore Hotel and Fengjia.","source":"https://www.booking.com/hotel/tw/euphemia.html","coordQuality":"verified_official"},{"id":"chunshuitang","name":"Chun Shui Tang · Siwei Original Store","zh":"","address":"No. 30, Siwei St., West District, Taichung City","locale":"Taichung, Taiwan","lat":24.1375684,"lon":120.6756327,"category":"Taiwanese lunch / bubble tea","rating":null,"reviews":null,"hours":"08:30–22:00 (official)","day":"2026-11-05","order":6,"time":"14:15","duration":65,"slot":"afternoon","priority":"High","note":"Original tea-house branch No.30 Siwei St. Order bubble milk tea and a seated lunch. Transit/taxi from hotel to central Taichung; avoid confusing with Fengjia branches.","source":"https://www.chunshuitang.com.tw/en/location-detail/original_store/","coordQuality":"verified_public"},{"id":"zhongshe","name":"Zhong She Tourist Flower Market","zh":"","address":"No.469-13, Sanfeng Rd., Houli District, Taichung City","locale":"Houli, Taichung, Taiwan","lat":24.33511,"lon":120.72839,"category":"Flower garden / family","rating":null,"reviews":null,"hours":"08:00–18:00 (tourism listing)","day":"2026-11-05","order":7,"time":"16:05","duration":60,"slot":"afternoon","priority":"High","note":"Family top priority. Open about 08:00–18:00 per Taichung tourism; recommend booked taxi/private driver because distant from city centre. Weather dependent; short garden visit with mobility breaks.","source":"https://travel.taichung.gov.tw/zh-cn/attractions/intro/206","coordQuality":"verified_public"},{"id":"euphemia_checkin","name":"Hotel Euphemia · check-in / rest","zh":"","address":"No.111 Hanxiang Rd., Xitun District, Taichung","locale":"Taichung, Taiwan","lat":24.1849942,"lon":120.6425971,"category":"Hotel / rest","rating":null,"reviews":null,"hours":"Reception check-in from 15:00","day":"2026-11-05","order":8,"time":"18:05","duration":35,"slot":"evening","priority":"High","note":"Check in, freshen up, and take break before evening. Taxi return from Houli flower market; travel can be ~35–60 min.","source":"https://www.booking.com/hotel/tw/euphemia.html","coordQuality":"verified_official"},{"id":"miyahara","name":"Miyahara · dessert / gifts","zh":"","address":"No. 20, Zhongshan Rd., Central District, Taichung City","locale":"Taichung, Taiwan","lat":24.13785,"lon":120.68357,"category":"Dessert / souvenirs","rating":null,"reviews":null,"hours":"10:00–21:00 (public listing; confirm)","day":"2026-11-05","order":9,"time":"19:15","duration":35,"slot":"evening","priority":"Medium","note":"Historic confectionery. Target visit before 21:00 closing (some listings later); travel from Fengjia ~25–40 min. If group is too tired, move to 6 Nov morning.","source":"https://www.miyahara.com.tw/","coordQuality":"verified_public"},{"id":"fengjia","name":"Fengjia Night Market","zh":"","address":"Wenhua Rd. / Feng Chia University area, Xitun District, Taichung City","locale":"Fengjia, Taichung, Taiwan","lat":24.1788,"lon":120.6459,"category":"Night market / dinner","rating":null,"reviews":null,"hours":"Evenings; vendor hours vary","day":"2026-11-05","order":10,"time":"20:20","duration":90,"slot":"night","priority":"High","note":"Core dinner/shopping. Near Euphemia hotel; short taxi/walk home when tired. Do not try to eat a formal big dinner before this.","source":"https://travel.taichung.gov.tw/","coordQuality":"area_approx"},{"id":"euphemia_breakfast","name":"Fengjia breakfast / Hotel Euphemia check-out","zh":"","address":"No.111 Hanxiang Rd., Xitun District, Taichung City","locale":"Taichung, Taiwan","lat":24.1849942,"lon":120.6425971,"category":"Breakfast / check-out","rating":null,"reviews":null,"hours":"Check-out generally by 11:00","day":"2026-11-06","order":1,"time":"08:40","duration":65,"slot":"morning","priority":"High","note":"Eat breakfast near the hotel; check-out by 11:00. No specific breakfast shop reserved. Hotel can recommend locally.","source":"https://www.booking.com/hotel/tw/euphemia.html","coordQuality":"verified_official"},{"id":"taichung_hsr_taipei","name":"HSR Taichung Station · toward Taipei","zh":"","address":"HSR Taichung Station, Wuri District, Taichung City","locale":"Taichung, Taiwan","lat":24.1124,"lon":120.6157,"category":"HSR / transfer","rating":null,"reviews":null,"hours":"","day":"2026-11-06","order":2,"time":"11:20","duration":35,"slot":"morning","priority":"High","note":"Leave hotel approximately 10:30–10:40 with bags. HSR Taichung→Taipei roughly 50–75 min (varies by train).","source":"https://en.thsrc.com.tw/","coordQuality":"landmark"},{"id":"taipei_main","name":"Taipei Main Station · arrival","zh":"","address":"Taipei Main Station, Zhongzheng District, Taipei","locale":"Taipei, Taiwan","lat":25.0478,"lon":121.517,"category":"HSR / transfer","rating":null,"reviews":null,"hours":"","day":"2026-11-06","order":3,"time":"12:45","duration":25,"slot":"afternoon","priority":"High","note":"HSR exit, taxi or Blue MRT line to Ximen, short walk to Fun Stay Inn Hanzhong.","source":"https://en.thsrc.com.tw/","coordQuality":"landmark"},{"id":"funstay_drop","name":"Fun Stay Inn Hanzhong · luggage drop","zh":"","address":"No. 6, Lane 147, Hanzhong St., Wanhua District, Taipei","locale":"Ximending, Taipei, Taiwan","lat":25.0422,"lon":121.505,"category":"Hotel / luggage","rating":null,"reviews":null,"hours":"Check-in time to verify","day":"2026-11-06","order":4,"time":"13:30","duration":30,"slot":"afternoon","priority":"High","note":"Confirm hotel room access/luggage arrangements. Investigate possible stairs/no elevator before arrival given one senior traveller.","source":"https://www.traveloka.com/en-sg/hotel/taiwan/fun-stay-inn-hanzhong-1000000492058","coordQuality":"area_approx"},{"id":"ximending_first","name":"Ximending pedestrian district","zh":"","address":"Ximending, Wanhua District, Taipei City","locale":"Taipei, Taiwan","lat":25.043,"lon":121.5076,"category":"Shopping district / lunch","rating":null,"reviews":null,"hours":"District, shops vary","day":"2026-11-06","order":5,"time":"14:10","duration":55,"slot":"afternoon","priority":"Medium","note":"Lively streets around Ximen MRT. Lunch/coffee and quick look before travelling to Taipei 101; you will have more evenings here.","source":"https://www.travel.taipei/","coordQuality":"landmark"},{"id":"taipei101","name":"Taipei 101 Observatory · 89F","zh":"","address":"No. 7, Section 5, Xinyi Rd., Xinyi District, Taipei City","locale":"Xinyi, Taipei, Taiwan","lat":25.0339,"lon":121.5646,"category":"Observation deck","rating":null,"reviews":null,"hours":"10:00–21:00 (official)","day":"2026-11-06","order":6,"time":"16:00","duration":90,"slot":"afternoon","priority":"High","note":"Go to the TOP. Aim for daytime-to-nightfall view. Official observatory 10:00–21:00; 2026 ticket counter temporarily relocated to office tower 1F. Book tickets if available.","source":"https://www.taipei-101.com.tw/en/observatory?fid=9898","coordQuality":"landmark"},{"id":"raohe","name":"Raohe Street Night Market","zh":"","address":"Raohe St., Songshan District, Taipei City","locale":"Songshan, Taipei, Taiwan","lat":25.0508,"lon":121.5775,"category":"Night market / dinner","rating":null,"reviews":null,"hours":"Evenings; stalls vary","day":"2026-11-06","order":7,"time":"18:15","duration":95,"slot":"evening","priority":"High","note":"Convenient northeast Taipei night market after 101; try pepper buns and other snacks. Bus/taxi or MRT via Songshan Line.","source":"https://www.travel.taipei/","coordQuality":"landmark"},{"id":"taipei_main_jiufen","name":"Taipei Main Station · Ruifang / Pingxi transfer","zh":"","address":"Taipei Main Station, Taipei City","locale":"Taipei, Taiwan","lat":25.0478,"lon":121.517,"category":"Train / day trip","rating":null,"reviews":null,"hours":"Train schedule must be checked","day":"2026-11-07","order":1,"time":"08:10","duration":30,"slot":"morning","priority":"High","note":"Take TRA towards Ruifang; connect Pingxi line for Shifen. Consider private vehicle for 5 travellers incl senior to avoid transfers. Times are planning placeholders.","source":"https://tip.railway.gov.tw/","coordQuality":"landmark"},{"id":"shifen_waterfall","name":"Shifen Waterfall","zh":"","address":"Shifen Waterfall, Pingxi District, New Taipei City","locale":"Shifen, New Taipei, Taiwan","lat":25.0508,"lon":121.7887,"category":"Nature / waterfall","rating":null,"reviews":null,"hours":"Daytime, check park closing","day":"2026-11-07","order":2,"time":"10:30","duration":75,"slot":"morning","priority":"High","note":"Natural waterfall with paths/steps; verify accessibility for older traveller. Travel from Taipei via Ruifang + Pingxi line or private driver.","source":"https://newtaipei.travel/en","coordQuality":"landmark"},{"id":"shifen_old","name":"Shifen Old Street · railway & sky lanterns","zh":"","address":"Shifen Old Street, Pingxi District, New Taipei City","locale":"Shifen, New Taipei, Taiwan","lat":25.0437,"lon":121.7771,"category":"Old street / lunch","rating":null,"reviews":null,"hours":"Daytime","day":"2026-11-07","order":3,"time":"12:00","duration":75,"slot":"midday","priority":"High","note":"Walk Shifen railway town, lunch, optional sky lantern release where permitted. Check rail timetable if returning to Ruifang.","source":"https://newtaipei.travel/en","coordQuality":"landmark"},{"id":"jiufen_old","name":"Jiufen Old Street","zh":"","address":"Jishan St., Ruifang District, New Taipei City","locale":"Jiufen, New Taipei, Taiwan","lat":25.109,"lon":121.8451,"category":"Old street / viewpoint","rating":null,"reviews":null,"hours":"Shops generally daytime–early evening","day":"2026-11-07","order":4,"time":"15:00","duration":125,"slot":"afternoon","priority":"High","note":"Tea houses, snacks and old alleys, possible steps/slopes. From Shifen to Jiufen by driver or via Ruifang connections; allow 1–1.5h. Depart by about 17:00.","source":"https://newtaipei.travel/en","coordQuality":"landmark"},{"id":"wulao_ximen","name":"Wulao Hotpot · Ximending Branch","zh":"","address":"2F, No. 55, Section 1, Zhonghua Rd., Zhongzheng District, Taipei","locale":"Ximending, Taipei, Taiwan","lat":25.0453,"lon":121.5091,"category":"Hotpot / special dinner","rating":null,"reviews":null,"hours":"Official 11:00–04:00 daily","day":"2026-11-07","order":5,"time":"20:00","duration":95,"slot":"night","priority":"High","note":"Special proper meal after day trip. Official branch No.55 Zhonghua Rd Sec1, 2F near Ximen MRT. Reserve for 5 people, adjust booking if return late.","source":"https://www.wulao.com.tw/store.php","coordQuality":"area_approx"},{"id":"chiate","name":"Chia Te Bakery · pineapple cake souvenirs","zh":"","address":"No. 88, Section 5, Nanjing E. Rd., Songshan District, Taipei","locale":"Songshan, Taipei, Taiwan","lat":25.0519,"lon":121.568,"category":"Bakery / souvenirs","rating":null,"reviews":null,"hours":"08:30–20:30 (official bakery)","day":"2026-11-08","order":1,"time":"09:00","duration":45,"slot":"morning","priority":"High","note":"Famous pineapple cakes. Main store No.88 Nanjing East Rd Sec5, near Nanjing Sanmin MRT. Official bakery currently lists 08:30–20:30; buy early before popular varieties sell out.","source":"https://www.chiate88.com.tw/","coordQuality":"area_approx"},{"id":"dtf_xinsheng","name":"Din Tai Fung · Xinsheng Branch (dine-in)","zh":"","address":"No. 277, Section 2, Xinyi Rd., Da’an District, Taipei City","locale":"Dongmen, Taipei, Taiwan","lat":25.0346,"lon":121.5321,"category":"Xiaolongbao / lunch","rating":null,"reviews":null,"hours":"Sun 10:30–20:30 (official)","day":"2026-11-08","order":2,"time":"11:00","duration":90,"slot":"morning","priority":"High","note":"User wishes original shop: true old Xinyi branch at No.194 is TAKEAWAY ONLY. Book/queue for this Xinsheng dine-in branch across the road No.277 instead. Try xiaolongbao and fried rice.","source":"https://www.dintaifung.com.tw/eng/store.php","coordQuality":"area_approx"},{"id":"tamsui_old","name":"Tamsui Old Street / Riverside","zh":"","address":"Zhongzheng Rd., Tamsui District, New Taipei City","locale":"Tamsui, New Taipei, Taiwan","lat":25.1716,"lon":121.4416,"category":"Waterfront / old street","rating":null,"reviews":null,"hours":"Daytime–evening shops","day":"2026-11-08","order":3,"time":"14:45","duration":105,"slot":"afternoon","priority":"High","note":"From Dongmen take MRT Red Line to Tamsui (~50–65 min with station access). Visit riverfront shops, stroll slowly, choose sunset view nearby depending weather.","source":"https://newtaipei.travel/en","coordQuality":"landmark"},{"id":"tamsui_fisher","name":"Tamsui Fisherman’s Wharf · sunset","zh":"","address":"Fisherman’s Wharf, Tamsui District, New Taipei City","locale":"Tamsui, New Taipei, Taiwan","lat":25.1834,"lon":121.4134,"category":"Harbour / sunset","rating":null,"reviews":null,"hours":"Outdoor weather dependent","day":"2026-11-08","order":4,"time":"16:50","duration":50,"slot":"evening","priority":"Optional","note":"OPTIONAL extension from Tamsui Old Street; taxi/light rail & walk to harbour. November sunset near ~17:15 (verify precise time/weather). If group tired, stay on Old Street and skip wharf.","source":"https://newtaipei.travel/en","coordQuality":"landmark"},{"id":"shilin","name":"Shilin Night Market","zh":"","address":"Ji He Rd. area, Shilin District, Taipei City","locale":"Shilin, Taipei, Taiwan","lat":25.0877,"lon":121.5242,"category":"Night market / dinner","rating":null,"reviews":null,"hours":"Evenings; vendors vary","day":"2026-11-08","order":5,"time":"19:00","duration":90,"slot":"night","priority":"High","note":"MRT from Tamsui to Jiantan (not Shilin station for main market). Food, casual shopping. If late/tired substitute Ningxia Night Market and finish earlier.","source":"https://www.travel.taipei/","coordQuality":"landmark"},{"id":"carrefour_guilin","name":"Carrefour Guilin Store · late-night souvenirs","zh":"","address":"No.1, Guilin Rd., Wanhua District, Taipei City","locale":"Wanhua, Taipei, Taiwan","lat":25.0378,"lon":121.5016,"category":"Supermarket / souvenirs","rating":null,"reviews":null,"hours":"Reported 24h; verify locally","day":"2026-11-08","order":6,"time":"21:20","duration":45,"slot":"night","priority":"Optional","note":"24h hypermarket widely reported near Ximending. Buy snacks and gifts; optional if exhausted, luggage space important. Verify store hours close to travel.","source":"https://www.carrefour.com.tw/","coordQuality":"area_approx"},{"id":"tpe_hotel_checkout","name":"Fun Stay Inn Hanzhong · very early checkout","zh":"","address":"No.6 Lane 147, Hanzhong St., Taipei","locale":"Taipei, Taiwan","lat":25.0422,"lon":121.505,"category":"Hotel / departure","rating":null,"reviews":null,"hours":"24h desk reported; confirm early access","day":"2026-11-09","order":1,"time":"04:45","duration":15,"slot":"morning","priority":"High","note":"Flight CI753 scheduled 08:20. Arrange early taxi/private transfer from Ximending to TPE airport. For 5 people and luggage, book appropriately sized vehicle in advance.","source":"https://www.traveloka.com/en-sg/hotel/taiwan/fun-stay-inn-hanzhong-1000000492058","coordQuality":"area_approx"},{"id":"tpe_checkin","name":"Taoyuan Airport Terminal 1 · check-in/security","zh":"","address":"Terminal 1, Taiwan Taoyuan International Airport","locale":"Taoyuan, Taiwan","lat":25.0797,"lon":121.2342,"category":"Airport / check-in","rating":null,"reviews":null,"hours":"International flight check-in","day":"2026-11-09","order":2,"time":"05:50","duration":125,"slot":"morning","priority":"High","note":"Target arrival around 2.5h before 08:20 international departure. Confirm airline terminal, booking, baggage and transfer times with live airline and road conditions.","source":"https://www.taoyuan-airport.com/","coordQuality":"landmark"},{"id":"ci753_depart","name":"CI753 flight to Singapore","zh":"","address":"Terminal 1, Taiwan Taoyuan International Airport","locale":"Taoyuan, Taiwan","lat":25.0797,"lon":121.2342,"category":"Flight / departure","rating":null,"reviews":null,"hours":"Flight schedule, not reservation","day":"2026-11-09","order":3,"time":"08:20","duration":15,"slot":"morning","priority":"High","note":"Published 2026 timetable: Taipei TPE 08:20 → Singapore SIN (approx midday arrival). Flight reference, not confirmed ticket; check booking for time changes.","source":"https://www.flight.info/CI753","coordQuality":"landmark"}],"legacyExtras":false,"seed":false,"createdAt":"2026-10-18T08:00:00Z","updatedAt":"2026-10-18T08:00:00Z","planningNotes":"5 travellers incl. one senior. Flight CI756 inbound TPE 2 Nov and CI753 outbound TPE 9 Nov. Flight schedules indicative; check confirmed e-ticket. All segment times are planning targets, not booked reservations."};
+  ensureTripSchema(t);
+  return t;
+}
+function ensureTripSchema(t){
+  if(!t||typeof t!=="object")return t;
+  if(!Array.isArray(t.places))t.places=[];
+  let old=t.places.find(p=>p.id==="hotel")||t.places.find(p=>p.day==="Base"||p.isBase);
+  if(!old){old={id:"hotel",name:"Trip base",zh:"",address:t.region||"",lat:null,lon:null,category:"Hotel / base",rating:null,reviews:null,hours:"Base",day:"Base",order:0,time:"Start / end",duration:0,slot:"base",priority:"Base",note:"Set your hotel or stage base.",source:"",locale:t.region||"",synthetic:true,isBase:true};t.places.unshift(old);}
+  t.places.forEach(p=>{if(p.id==="hotel"||p.day==="Base"||p.isBase){p.isBase=true;p.day="Base";p.priority="Base";p.slot="base";}});
+  if(!t.baseId||!t.places.some(p=>p.id===t.baseId&&p.isBase))t.baseId=old.id;
+  if(!t.dayBases||typeof t.dayBases!=="object")t.dayBases={};
+  const dates=[];
+  if(t.startDate&&t.endDate){let d=new Date(t.startDate+"T12:00:00Z"),e=new Date(t.endDate+"T12:00:00Z");for(let i=0;d<=e&&i<62;i++,d=new Date(d.getTime()+86400000))dates.push(d.toISOString().slice(0,10));}
+  let carry=t.baseId;
+  dates.forEach(day=>{const prev=t.dayBases[day]||{};const s=t.places.some(p=>p.id===prev.startBaseId&&p.isBase)?prev.startBaseId:carry;const e=t.places.some(p=>p.id===prev.endBaseId&&p.isBase)?prev.endBaseId:s;t.dayBases[day]={startBaseId:s,endBaseId:e};carry=e;});
+  return t;
+}
+function loadLibrary(){
+  try{
+    const raw=localStorage.getItem(LIBRARY_KEY);
+    if(raw){const x=JSON.parse(raw);if(Array.isArray(x.trips)){x.trips.forEach(ensureTripSchema);return x;}}
+  }catch(e){}
+  const trip=seedTrip();
+  try{
+    const legacy=JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY)||"null");
+    if(Array.isArray(legacy?.places)) trip.places=legacy.places;
+  }catch(e){}
+  const lib={version:2,trips:[trip]};
+  localStorage.setItem(LIBRARY_KEY,JSON.stringify(lib));
+  return lib;
+}
+function saveLibrary(){localStorage.setItem(LIBRARY_KEY,JSON.stringify(library));}
+function tripById(id){return library.trips.find(t=>t.id===id)||null;}
+function safeSlug(s){return String(s||"trip").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,45)||"trip";}
+function tripDates(t=currentTrip){
+  const dates=[];
+  if(t?.startDate&&t?.endDate){
+    let d=new Date(t.startDate+"T12:00:00Z"), e=new Date(t.endDate+"T12:00:00Z");
+    for(let i=0;d<=e&&i<31;i++,d=new Date(d.getTime()+86400000)) dates.push(d.toISOString().slice(0,10));
+  }
+  const extra=[...new Set((t?.places||[]).map(p=>p.day).filter(x=>x&&x!=="Base"&&x!=="Legacy"))];
+  extra.forEach(x=>{if(!dates.includes(x))dates.push(x)});
+  return dates.sort();
+}
+function dayLabel(date){
+  if(date==="all")return "All";
+  try{return new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"}).format(new Date(date+"T12:00:00Z"));}catch(e){return date;}
+}
+function rebuildDayLabels(){DAY_LABELS={};tripDates().forEach(d=>DAY_LABELS[d]=dayLabel(d));}
+function colorForDay(day){const i=Math.max(0,tripDates().indexOf(day));return PALETTE[i%PALETTE.length];}
+function dateRangeLabel(t=currentTrip){
+  if(!t?.startDate&&!t?.endDate)return "Dates not set";
+  if(t.startDate===t.endDate)return dayLabel(t.startDate);
+  return `${dayLabel(t.startDate)} – ${dayLabel(t.endDate)} ${String(t.endDate||"").slice(0,4)}`;
+}
+
+function clone(v){ return JSON.parse(JSON.stringify(v)); }
+function loadPlaces(){ return currentTrip?clone(currentTrip.places||[]):[]; }
+function save(){
+  if(!currentTrip)return;
+  currentTrip.places=clone(state.places);currentTrip.updatedAt=new Date().toISOString();
+  const i=library.trips.findIndex(t=>t.id===currentTrip.id);if(i>=0)library.trips[i]=currentTrip;
+  saveLibrary();
+}
+function loadRouteCache(){
+  try{return JSON.parse(localStorage.getItem(ROUTE_CACHE_KEY)||"{}")}catch(e){return {}}
+}
+function saveRouteCache(){
+  const keys=Object.keys(routeCache);
+  if(keys.length>80){ for(const k of keys.slice(0,keys.length-80)) delete routeCache[k]; }
+  localStorage.setItem(ROUTE_CACHE_KEY,JSON.stringify(routeCache));
+}
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const map = L.map("map",{zoomControl:true,preferCanvas:true}).setView([23.7,121.0],7);
+
+// Browser-friendly basemaps. The previous build used OpenStreetMap's volunteer
+// tile server directly; file:// pages can be rejected by that service. Route
+// Studio now defaults to Esri-hosted tiles and lets the user switch styles.
+const BASEMAP_ATTR = 'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a>';
+const basemapStreet = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+  {maxZoom:19, attribution:BASEMAP_ATTR}
+);
+const basemapTopo = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+  {maxZoom:19, attribution:BASEMAP_ATTR}
+);
+const basemapImagery = L.tileLayer(
+  "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {maxZoom:19, attribution:BASEMAP_ATTR}
+);
+const BASEMAPS={
+  "Street":basemapStreet,
+  "Topographic":basemapTopo,
+  "Satellite":basemapImagery
+};
+let activeBasemap=basemapStreet;
+activeBasemap.addTo(map);
+L.control.layers(BASEMAPS,null,{position:"topright",collapsed:true}).addTo(map);
+
+// If a tile host has a transient problem, fail over to another Esri style
+// instead of leaving a wall of broken-tile images on screen.
+let basemapErrorCount=0, basemapFailedOver=false;
+function attachBasemapHealth(layer){
+  layer.on("tileerror",()=>{
+    basemapErrorCount++;
+    if(basemapErrorCount>=6 && !basemapFailedOver && map.hasLayer(layer)){
+      basemapFailedOver=true;
+      map.removeLayer(layer);
+      activeBasemap = layer===basemapStreet ? basemapTopo : basemapStreet;
+      activeBasemap.addTo(map);
+      toast?.("Map tiles had trouble loading, so Route Studio switched basemap automatically.");
+    }
+  });
+  layer.on("tileload",()=>{ if(map.hasLayer(layer)) basemapErrorCount=0; });
+}
+Object.values(BASEMAPS).forEach(attachBasemapHealth);
+map.on("baselayerchange",e=>{ activeBasemap=e.layer; basemapErrorCount=0; basemapFailedOver=false; });
+
+function dayOf(p){ return p.day; }
+function isBasePlace(p){return !!p&&(p.isBase||p.day==="Base"||p.id==="hotel");}
+function allBases(){return state.places.filter(isBasePlace);}
+function defaultBase(){return state.places.find(p=>p.id===currentTrip?.baseId&&isBasePlace(p))||allBases()[0]||null;}
+function dayBasePair(day=state.day){
+  const d=day&&day!=="all"?day:(tripDates()[0]||null),fallback=defaultBase();
+  const cfg=d?(currentTrip?.dayBases?.[d]||{}):{};
+  const start=state.places.find(p=>p.id===cfg.startBaseId&&isBasePlace(p))||fallback;
+  const end=state.places.find(p=>p.id===cfg.endBaseId&&isBasePlace(p))||start||fallback;
+  return {start,end};
+}
+function base(){return dayBasePair().start||defaultBase();}
+function hotel(){return defaultBase();}
+function startBase(day=state.day){return dayBasePair(day).start;}
+function endBase(day=state.day){return dayBasePair(day).end;}
+function activePlaces(){
+  const arr=state.places.filter(p=>!isBasePlace(p));
+  if(state.day==="all") return arr.slice().sort((a,b)=>String(a.day).localeCompare(String(b.day))||(a.order||0)-(b.order||0));
+  return arr.filter(p=>p.day===state.day).sort((a,b)=>(a.order||0)-(b.order||0));
+}
+function getPlace(id){ return state.places.find(p=>p.id===id) || (currentTrip?.seed?LEGACY_PLACES.find(p=>p.id===id):null); }
+function isLegacy(id){ return !!(currentTrip?.seed&&LEGACY_PLACES.find(p=>p.id===id) && !state.places.find(p=>p.id===id)); }
+function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+function formatRating(p){return p.rating ? `${p.rating} ★${p.reviews?` · ${Number(p.reviews).toLocaleString()} reviews`:""}`:"—";}
+function dayClass(p){const i=tripDates().indexOf(p.day);return i%2?"d2":"d1";}
+function markerHtml(p){
+  const legacy=isLegacy(p.id), isBase=isBasePlace(p);
+  let baseText="B";if(isBase&&state.day!=="all"){const pair=dayBasePair(state.day);baseText=pair.start?.id===p.id&&pair.end?.id===p.id?"B":pair.start?.id===p.id?"S":pair.end?.id===p.id?"E":"B";}
+  const text=isBase?baseText:legacy?"L":(p.order||"•");
+  const color=isBase?"#0369a1":legacy?"#64748b":colorForDay(p.day);
+  return `<div class="marker-bubble" style="background:${color}"><span>${text}</span></div>`;
+}
+function markerIcon(p){ return L.divIcon({className:"",html:markerHtml(p),iconSize:[30,30],iconAnchor:[15,29]}); }
+function renderMarkers(){
+  const pair=dayBasePair(); const visible = new Set([...(pair.start?[pair.start.id]:[]),...(pair.end?[pair.end.id]:[]), ...activePlaces().map(p=>p.id)]);
+  if(state.day==="all") state.places.forEach(p=>visible.add(p.id));
+  if(state.showLegacy&&currentTrip?.seed) LEGACY_PLACES.forEach(p=>visible.add(p.id));
+  const all=[...state.places,...(state.showLegacy&&currentTrip?.seed?LEGACY_PLACES:[])];
+  for(const p of all){
+    if(!Number.isFinite(p.lat)||!Number.isFinite(p.lon)) continue;
+    if(!visible.has(p.id)){
+      if(markers.has(p.id)){ map.removeLayer(markers.get(p.id)); markers.delete(p.id); }
+      continue;
+    }
+    let m=markers.get(p.id);
+    if(!m){
+      m=L.marker([p.lat,p.lon],{icon:markerIcon(p),keyboard:true,title:p.name}).addTo(map);
+      m.on("click",()=>onPlaceClick(p.id));
+      markers.set(p.id,m);
+    } else {
+      m.setLatLng([p.lat,p.lon]); m.setIcon(markerIcon(p));
+    }
+    m.setZIndexOffset((p.id===state.routeA||p.id===state.routeB)?800:0);
+  }
+  for(const [id,m] of [...markers]){
+    if(!all.find(p=>p.id===id) || !visible.has(id)){map.removeLayer(m);markers.delete(id);}
+  }
+  renderGuide();
+}
+function renderGuide(){
+  if(guideLayer){map.removeLayer(guideLayer);guideLayer=null;}
+  if(state.mode==="route" && routeLayer) return;
+  if(state.day==="all") return;
+  const arr=activePlaces().filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+  if(!arr.length) return;
+  const s=startBase(state.day),e=endBase(state.day);
+  const pts=[...(s&&Number.isFinite(s.lat)?[[s.lat,s.lon]]:[]),...arr.map(p=>[p.lat,p.lon]),...(e&&Number.isFinite(e.lat)?[[e.lat,e.lon]]:[])];
+  if(pts.length<2)return;
+  guideLayer=L.polyline(pts,{color:colorForDay(state.day),weight:2,opacity:.55,dashArray:"5 7"}).addTo(map);
+}
+
+function routeInfo(a,b){
+  if(!a||!b) return null;
+  return CURATED_ROUTES[`${a.id}>${b.id}`] || null;
+}
+function legHtml(a,b){
+  if(!a||!b) return "";
+  const curated=routeInfo(a,b);
+  const text=curated?`${curated.label} · ${curated.detail}`:"Click Route to compare walking, transit, bike and taxi.";
+  return `<div class="leg"><span>↓</span><div><b>${esc(curated?curated.label:"Next leg")}</b><br>${esc(curated?curated.detail:"Compare modes for this pair.")}</div><button type="button" onclick="setRoutePair('${a.id}','${b.id}')">Route</button></div>`;
+}
+
+function renderItinerary(){
+  const arr=activePlaces();
+  $("#itineraryList").innerHTML="";
+  $("#startLeg").innerHTML="";
+  $("#endLeg").innerHTML="";
+  if(state.day==="all"){
+    $("#baseCard").classList.add("hidden");
+    $("#itineraryList").innerHTML=arr.map(p=>placeCardHtml(p,true)).join("");
+  } else {
+    $("#baseCard").classList.remove("hidden");
+    const s=startBase(state.day),e=endBase(state.day);
+    if(arr[0]&&s&&Number.isFinite(s.lat)) $("#startLeg").innerHTML=legHtml(s,arr[0]);
+    $("#itineraryList").innerHTML=arr.map((p,i)=>placeCardHtml(p,false)+(i<arr.length-1?legHtml(p,arr[i+1]):"")).join("");
+    if(arr.length&&e&&Number.isFinite(e.lat)) $("#endLeg").innerHTML=legHtml(arr[arr.length-1],e);
+  }
+  initSortable();
+  renderSummary();
+  renderLegacyStrip();
+}
+function placeCardHtml(p,showDay){
+  const pri=p.priority==="High"?"high":p.priority==="Optional"?"optional":"";
+  const routeCls=p.id===state.routeA?"route-a":p.id===state.routeB?"route-b":"";
+  const selected=p.id===state.selected?"selected":"";
+  return `<div class="place-card ${selected} ${routeCls}" data-id="${p.id}" onclick="cardClick(event,'${p.id}')">
+    <div>
+      <div class="drag" title="Drag to reorder">⋮⋮</div>
+      <div class="num ${dayClass(p)}">${p.order}</div>
+    </div>
+    <div>
+      <div class="pc-title">${esc(p.name)}</div>
+      <div class="pc-meta">
+        ${showDay?`<span class="chip">${esc(dayLabel(p.day))}</span>`:""}
+        <span class="chip">${esc(p.category)}</span>
+        <span class="chip ${pri}">${esc(p.priority)}</span>
+      </div>
+      <div class="pc-sub">${esc(p.hours)}</div>
+    </div>
+    <div class="pc-side">
+      <div class="pc-time">${esc(p.time||"")}</div>
+      <button type="button" class="pc-edit" title="Edit this stop" aria-label="Edit ${esc(p.name)}" onclick="event.stopPropagation();openEditor('${p.id}')">✎</button>
+      <div class="mobile-reorder" aria-label="Reorder stop">
+        <button type="button" title="Move earlier" aria-label="Move ${esc(p.name)} earlier" onclick="event.stopPropagation();moveStop('${p.id}',-1)">↑</button>
+        <button type="button" title="Move later" aria-label="Move ${esc(p.name)} later" onclick="event.stopPropagation();moveStop('${p.id}',1)">↓</button>
+      </div>
+    </div>
+  </div>`;
+}
+function initSortable(){
+  if(sortable){sortable.destroy();sortable=null;}
+  if(state.day==="all" || !window.Sortable) return;
+  sortable = Sortable.create($("#itineraryList"),{
+    animation:160, handle:".drag", draggable:".place-card", ghostClass:"selected",
+    delay:180, delayOnTouchOnly:true, touchStartThreshold:5, fallbackTolerance:5,
+    fallbackOnBody:true, forceFallback:/iPad|iPhone|iPod/.test(navigator.userAgent),
+    onEnd:()=>{
+      const ids=$$("#itineraryList .place-card").map(el=>el.dataset.id);
+      ids.forEach((id,i)=>{const p=state.places.find(x=>x.id===id); if(p) p.order=i+1;});
+      save(); renderAll(); toast("Itinerary order updated.");
+    }
+  });
+}
+function moveStop(id,dir){
+  if(state.day==="all")return;
+  const arr=activePlaces();
+  const i=arr.findIndex(p=>p.id===id),j=i+Number(dir||0);
+  if(i<0||j<0||j>=arr.length)return;
+  const a=state.places.find(p=>p.id===arr[i].id),b=state.places.find(p=>p.id===arr[j].id);
+  if(!a||!b)return;
+  const ao=a.order,bo=b.order;a.order=bo;b.order=ao;
+  save();renderAll();
+}
+window.moveStop=moveStop;
+function renderDayTabs(){
+  const days=tripDates();
+  if(state.day!=="all"&&!days.includes(state.day))state.day=days[0]||"all";
+  $("#dayTabs").innerHTML=days.map(d=>`<button class="daytab ${state.day===d?"active":""}" data-day="${d}">${esc(dayLabel(d))}</button>`).join("")+`<button class="daytab ${state.day==="all"?"active":""}" data-day="all">All</button>`;
+  $$(".daytab").forEach(b=>b.onclick=()=>selectDay(b.dataset.day));
+}
+function renderTripChrome(){
+  if(!currentTrip)return;
+  $("#appTitle").textContent=currentTrip.name||"Route Studio";
+  const pair=dayBasePair();
+  $("#appSubtitle").textContent=`${dateRangeLabel()} · ${currentTrip.region||"region inferred from your places"}`;
+  $("#tripsBtn").textContent=`Trips · ${currentTrip.name||"current"}`;
+  $("#legacyBtn").classList.toggle("hidden",!currentTrip.seed);
+  const baseCard=$("#baseCard");
+  if(state.day!=="all"&&(pair.start||pair.end)){baseCard.classList.remove("hidden");const same=pair.start?.id===pair.end?.id;$("#baseName").innerHTML=same?esc(pair.start?.name||"Trip base"):`<span class="base-flow"><span class="stage">Start</span>${esc(pair.start?.name||"No base")}<span class="arrow">→</span><span class="stage">End</span>${esc(pair.end?.name||"No base")}</span>`;$("#baseSub").textContent=same?(pair.start?.address||"Click to manage this day's base"):`${pair.start?.address||""} → ${pair.end?.address||""}`;}
+  else if(state.day==="all"){baseCard.classList.add("hidden");}
+  else baseCard.classList.add("hidden");
+}
+function renderSummary(){
+  const arr=activePlaces();
+  $("#kpiStops").textContent=arr.length;
+  if(state.day==="all"){
+    $("#kpiWindow").textContent=`${tripDates().length} day${tripDates().length===1?"":"s"}`;
+    $("#kpiConstraint").textContent=`${state.places.filter(p=>!isBasePlace(p)).length} places`;
+    $("#dayNotice").textContent=`${currentTrip?.region?currentTrip.region+" · ":""}All destinations in this trip. Drag-and-drop ordering is available inside each individual day.`;
+    return;
+  }
+  $("#kpiWindow").textContent=arr.length&&arr[0].time&&arr[arr.length-1].time?`${arr[0].time}–${arr[arr.length-1].time}`:"Flexible";
+  const hi=arr.filter(p=>p.priority==="High").length;$("#kpiConstraint").textContent=hi?`${hi} high priority`:"Flexible";
+  if(currentTrip?.seed&&state.day==="2026-11-02") $("#dayNotice").textContent="Monday keeps the breakfast closure constraint, then sweeps through the waterfront and south-city cluster before Liuhe.";
+  else if(currentTrip?.seed&&state.day==="2026-11-03") $("#dayNotice").textContent="Tuesday anchors Ruifeng and the north-city cluster while protecting Dragon & Tiger Pagoda’s closing time.";
+  else $("#dayNotice").textContent=`${dayLabel(state.day)} · reorder stops by dragging. Smart optimize keeps explicit HH:MM times chronological, then fits untimed stops around them using travel, duration, opening windows, dayparts and bases.`;
+}
+function renderLegacyStrip(){
+  const el=$("#legacyStrip");
+  if(!state.showLegacy||!currentTrip?.seed){el.classList.add("hidden");return;}
+  el.classList.remove("hidden");
+  el.innerHTML=`<b>Earlier-plan extras</b><p>Optional Kaohsiung stops from the earlier draft. Add them only if you want to trade coverage elsewhere.</p><div class="legacy-list">${LEGACY_PLACES.map(p=>`<button type="button" onclick="showPlace('${p.id}')">${esc(p.name)}</button>`).join("")}</div>`;
+}
+function renderAll(){
+  if(!currentTrip)return;
+  rebuildDayLabels();renderDayTabs();renderTripChrome();renderItinerary();renderMarkers();
+  $("#browseMode").classList.toggle("active",state.mode==="browse");
+  $("#routeMode").classList.toggle("active",state.mode==="route");
+  $("#mapStatus").textContent=state.mode==="browse"?`Browse · ${currentTrip.region||"auto-localised trip"}`:"Route mode · click A, then B";
+}
+function selectDay(day){
+  state.day=day;state.selected=null;state.routeA=state.routeB=null;clearRouteLayer();$("#infoDrawer").classList.add("hidden");$("#routeDrawer").classList.add("hidden");renderAll();setTimeout(fitVisible,0);
+}
+function cardClick(ev,id){
+  if(ev.target.closest("button")) return;
+  onPlaceClick(id);
+}
+function onPlaceClick(id){
+  if(state.mode==="route"){ selectRoutePoint(id); return; }
+  showPlace(id);
+}
+function showPlace(id){
+  const p=getPlace(id); if(!p) return;
+  state.selected=id;
+  renderItinerary();
+  const legacy=isLegacy(id);
+  const d=$("#infoDrawer");
+  d.classList.remove("hidden"); $("#routeDrawer").classList.add("hidden");
+  d.innerHTML=`<div class="drawer-head"><div><h2>${esc(p.name)}</h2><p>${esc(p.zh||"")} · ${esc(p.category)}</p></div><button class="x" onclick="closeInfo()">×</button></div>
+  <dl class="detail-grid">
+    <dt>Saved rating</dt><dd>${esc(formatRating(p))}</dd>
+    <dt>Address</dt><dd>${esc(p.address)}</dd>
+    <dt>Hours</dt><dd>${esc(p.hours)}</dd>
+    <dt>Plan</dt><dd>${legacy?"Prior-plan extra":`${esc(dayLabel(p.day))} · ${esc(p.time||"")} · ${p.duration||0} min`}</dd>
+    <dt>Priority</dt><dd>${esc(p.priority||"")}</dd>
+  </dl>
+  <div class="note-box">${esc(p.note||"")}</div>
+  <div class="drawer-actions">
+    ${legacy?`<button class="primary" onclick="addLegacy('${p.id}')">Add to current day</button>`:(isBasePlace(p)?`<button class="primary" onclick="openBaseManager('${state.day!=="all"?state.day:""}')">Manage stage bases</button><button onclick="openBaseEditor('${p.id}')">Edit base</button>`:`<button class="primary" onclick="setRoutePair('${startBase(p.day)?.id||defaultBase()?.id||""}','${p.id}')">Route from day start</button><button onclick="openEditor('${p.id}')">Edit stop</button><button onclick="removePlace('${p.id}')">Remove</button>`)}
+    <button onclick="openGoogle('${p.id}','search')">Google Maps</button>
+  </div>
+  <div class="drawer-closebar"><button onclick="closeInfo()">Close panel</button></div>`;
+  if(markers.has(id)){map.panTo(markers.get(id).getLatLng(),{animate:true,duration:.35});}
+}
+function closeInfo(){ $("#infoDrawer").classList.add("hidden"); state.selected=null; renderItinerary(); }
+
+function setMode(mode){
+  state.mode=mode;
+  if(mode==="browse"){
+    state.routeA=state.routeB=null;
+    clearRouteLayer();
+    $("#routeDrawer").classList.add("hidden");
+  }else{
+    $("#infoDrawer").classList.add("hidden");
+  }
+  renderAll();
+}
+$("#browseMode").onclick=()=>setMode("browse");
+$("#routeMode").onclick=()=>setMode("route");
+
+function setRoutePair(a,b){
+  const pa=getPlace(a),pb=getPlace(b);if(!pa||!pb||!Number.isFinite(pa.lat)||!Number.isFinite(pa.lon)||!Number.isFinite(pb.lat)||!Number.isFinite(pb.lon)){toast("Set valid coordinates for both route points first.");return;}
+  state.mode="route"; state.routeA=a; state.routeB=b;
+  $("#infoDrawer").classList.add("hidden");
+  renderAll(); renderRouteDrawer(); fitPair();
+  const rec=recommendMode(pa,pb);
+  if(rec==="walk"||rec==="drive") drawRoute(rec,true);
+  else drawDirectGuide();
+}
+window.setRoutePair=setRoutePair;
+
+function selectRoutePoint(id){
+  if(!state.routeA || (state.routeA && state.routeB)){ state.routeA=id; state.routeB=null; clearRouteLayer(); }
+  else if(id!==state.routeA){ state.routeB=id; }
+  if(state.routeA&&state.routeB){const a=getPlace(state.routeA),b=getPlace(state.routeB);if(!a||!b||!Number.isFinite(a.lat)||!Number.isFinite(a.lon)||!Number.isFinite(b.lat)||!Number.isFinite(b.lon)){toast("That point is not located yet. Edit it or import coordinates first.");state.routeB=null;}}
+  renderAll(); renderRouteDrawer();
+  if(state.routeA&&state.routeB){
+    fitPair();
+    const rec=recommendMode(getPlace(state.routeA),getPlace(state.routeB));
+    if(rec==="walk"||rec==="drive") drawRoute(rec,true); else drawDirectGuide();
+  }
+}
+function fitPair(){
+  const a=getPlace(state.routeA),b=getPlace(state.routeB); if(!a||!b)return;
+  map.fitBounds([[a.lat,a.lon],[b.lat,b.lon]],{padding:[70,70],maxZoom:15});
+}
+function swapRoute(){
+  [state.routeA,state.routeB]=[state.routeB,state.routeA]; renderAll(); renderRouteDrawer(); fitPair();
+}
+window.swapRoute=swapRoute;
+
+function hav(a,b){
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dlat=toR(b.lat-a.lat), dlon=toR(b.lon-a.lon);
+  const q=Math.sin(dlat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dlon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(q));
+}
+function recommendMode(a,b){
+  const c=routeInfo(a,b); if(c) return c.method;
+  const km=hav(a,b);
+  if(km<=1.15) return "walk";
+  if(km<=2.6) return "drive";
+  return "transit";
+}
+function estimate(mode,a,b){
+  const direct=hav(a,b);
+  let km=direct;
+  if(mode==="walk") km*=1.18;
+  if(mode==="bike") km*=1.15;
+  if(mode==="drive") km*=1.28;
+  if(mode==="transit") km*=1.16;
+  let min=0;
+  if(mode==="walk") min=km/4.7*60;
+  if(mode==="bike") min=km/14*60;
+  if(mode==="drive") min=km/24*60+3;
+  if(mode==="transit") min=km/20*60+10;
+  return {km,min:Math.max(3,Math.round(min))};
+}
+function methodLabel(m){return ({walk:"Walk",transit:"Public transit",bike:"Bike",drive:"Taxi / drive"})[m];}
+function modeIcon(m){return ({walk:"🚶",transit:"🚇",bike:"🚲",drive:"🚕"})[m];}
+function routeDefaultWhen(a){
+  if(a?.day&&/^\d{4}-\d{2}-\d{2}$/.test(a.day)&&a.time&&/^\d{2}:\d{2}$/.test(a.time)) return `${a.day}T${a.time}`;
+  const d=new Date(Date.now()+5*60000);d.setSeconds(0,0);const z=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`;
+}
+function renderRouteDrawer(){
+  const d=$("#routeDrawer"); d.classList.remove("hidden"); $("#infoDrawer").classList.add("hidden");
+  const a=getPlace(state.routeA),b=getPlace(state.routeB);
+  const curated=a&&b?routeInfo(a,b):null;
+  const rec=a&&b?recommendMode(a,b):null;
+  const recommendation = a&&b ? (curated?curated.detail:
+    rec==="walk"?"Close enough that walking is usually simplest.":
+    rec==="transit"?"Use live transit to see the actual bus/MRT/LRT/train line, stops, transfers and walking legs.":
+    "A taxi/ride-hail is likely the fastest simple option for this medium-distance city leg.") : "Click a start pin (A), then a destination pin (B).";
+  const methods = a&&b ? ["walk","transit","bike","drive"].map(m=>{
+    const e=estimate(m,a,b), isRec=m===rec;
+    if(m==="transit") return `<div class="method ${isRec?"active":""}" id="method-${m}">
+      <div class="method-top"><b>${modeIcon(m)} ${methodLabel(m)}</b>${isRec?`<small>RECOMMENDED</small>`:""}</div>
+      <div class="estimate" id="est-${m}">~${e.min} min</div><small id="dist-${m}">Live result replaces estimate</small>
+      <div class="method-actions"><button class="primary-mini" onclick="drawTransitRoute()">Show transit</button><button onclick="openGoogleRoute('${a.id}','${b.id}','transit')">Google Maps</button></div>
+    </div>`;
+    return `<div class="method ${isRec?"active":""}" id="method-${m}">
+      <div class="method-top"><b>${modeIcon(m)} ${methodLabel(m)}</b>${isRec?`<small>RECOMMENDED</small>`:""}</div>
+      <div class="estimate" id="est-${m}">~${e.min} min</div><small id="dist-${m}">~${e.km.toFixed(1)} km estimate</small>
+      <div class="method-actions"><button class="primary-mini" onclick="drawRoute('${m}',false)">Draw route</button><button onclick="openGoogleRoute('${a.id}','${b.id}','${m}')">Google Maps</button></div>
+    </div>`;
+  }).join(""):"";
+  d.innerHTML=`<div class="drawer-head"><div><h2>Route A → B</h2><p>Uses the stop name + trip locale for place resolution.</p></div><button class="x" onclick="closeRoute()">×</button></div>
+  <div class="route-selectors">
+    <div class="route-point"><span>A · start</span><b>${a?esc(a.name):"Select a pin"}</b></div>
+    <button class="swap" onclick="swapRoute()" ${(!a||!b)?"disabled":""}>⇄</button>
+    <div class="route-point"><span>B · destination</span><b>${b?esc(b.name):"Select a pin"}</b></div>
+  </div>
+  ${a&&b?`<div class="route-timebar"><div><label>Plan departure</label><input id="routeWhen" type="datetime-local" value="${esc(routeDefaultWhen(a))}"></div><button onclick="openRoutingSettings()">Transit setup</button></div>`:""}
+  <div class="recommend"><b>${a&&b?`Recommended: ${esc(curated?curated.label:methodLabel(rec))}`:"Routing mode"}</b><br>${esc(recommendation)}</div>
+  <div class="methods">${methods}</div>
+  <div id="steps" class="steps ${a&&b?"":"hidden"}"></div>
+  <div class="route-footer">Walking, cycling and driving use an OSRM convenience layer. Provider lookups use stop name + trip locale (never the street address). In-app public transit uses Google’s current Routes library when you add a Maps API key; the external Google Maps button always remains available.</div>
+  <div class="drawer-closebar"><button onclick="closeRoute()">Close routing panel</button></div>`;
+}
+function closeRoute(){ $("#routeDrawer").classList.add("hidden"); }
+
+function stageLocaleForDay(day){
+  if(!day||day==="Base"||day==="all")return currentTrip?.region||"";
+  const pair=dayBasePair(day);return pair.start?.locale||pair.end?.locale||currentTrip?.region||"";
+}
+function placeQuery(p){
+  if(!p)return "";
+  // Universal lookup policy: identify a POI by name + the most specific saved
+  // locale. Street addresses remain display/export metadata and are never sent
+  // as the lookup query. This also supports multi-city / multi-stage trips.
+  const locale=p.locale||stageLocaleForDay(p.day)||currentTrip?.region;
+  const vals=[p.name,locale].map(x=>String(x||"").trim()).filter(Boolean);
+  return vals.filter((x,i,a)=>a.findIndex(y=>y.toLowerCase()===x.toLowerCase())===i).join(", ");
+}
+function getGoogleRoutesKey(){return localStorage.getItem(GOOGLE_ROUTES_KEY)||"";}
+function openRoutingSettings(){
+  const key=getGoogleRoutesKey();
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Live transit setup</h2>
+  <div class="field full"><label>Google Maps API key</label><div class="secret-row"><input id="grKey" type="password" autocomplete="off" value="${esc(key)}" placeholder="Paste API key"><button onclick="toggleSecret('grKey')">Show</button></div><div class="status">For detailed in-app bus/MRT/LRT/train routes, enable both Maps JavaScript API and Routes API for this key. The key stays in this browser's local storage. If you do not configure one, Google Maps handoff still works.</div></div>
+  <div class="api-note">For a personal local-file build, use a dedicated key with tight quota/API restrictions. For a publicly hosted version, restrict the key to the hosted origin instead of leaving it unrestricted.</div>
+  <div class="modal-actions"><button onclick="clearRoutingKey()">Remove key</button><button onclick="closeModal()">Cancel</button><button class="primary" onclick="saveRoutingSettings()">Save</button></div></div></div>`;
+}
+window.openRoutingSettings=openRoutingSettings;
+function toggleSecret(id){const el=document.getElementById(id);if(el)el.type=el.type==="password"?"text":"password";}window.toggleSecret=toggleSecret;
+function saveRoutingSettings(){const v=$("#grKey")?.value.trim()||"";if(v)localStorage.setItem(GOOGLE_ROUTES_KEY,v);else localStorage.removeItem(GOOGLE_ROUTES_KEY);googleRoutesLoader=null;closeModal();toast(v?"Live transit key saved.":"Live transit key removed.");}
+window.saveRoutingSettings=saveRoutingSettings;
+function clearRoutingKey(){localStorage.removeItem(GOOGLE_ROUTES_KEY);googleRoutesLoader=null;closeModal();toast("Live transit key removed.");}window.clearRoutingKey=clearRoutingKey;
+async function ensureGoogleRoutes(){
+  if(window.google?.maps?.importLibrary) return window.google.maps;
+  const key=getGoogleRoutesKey();if(!key)throw new Error("Live transit is not configured yet.");
+  if(googleRoutesLoader)return googleRoutesLoader;
+  googleRoutesLoader=new Promise((resolve,reject)=>{
+    const prior=document.querySelector('script[data-route-studio-google="1"]');if(prior)prior.remove();
+    const sc=document.createElement("script");sc.dataset.routeStudioGoogle="1";sc.async=true;sc.defer=true;sc.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async`;
+    const timer=setTimeout(()=>reject(new Error("Google Maps library timed out.")),18000);
+    sc.onload=()=>{clearTimeout(timer);window.google?.maps?.importLibrary?resolve(window.google.maps):reject(new Error("Google Maps loaded without the Routes library."));};
+    sc.onerror=()=>{clearTimeout(timer);googleRoutesLoader=null;reject(new Error("Google Maps library could not load. Check the key and enabled APIs."));};document.head.appendChild(sc);
+  });
+  return googleRoutesLoader;
+}
+function pointLatLng(pt){if(!pt)return null;const lat=typeof pt.lat==="function"?pt.lat():pt.lat;const lng=typeof pt.lng==="function"?pt.lng():pt.lng;return Number.isFinite(lat)&&Number.isFinite(lng)?[lat,lng]:null;}
+function googlePath(route){
+  let pts=(route?.path||[]).map(pointLatLng).filter(Boolean);
+  if(!pts.length) pts=(route?.legs||[]).flatMap(l=>(l.steps||[]).flatMap(st=>(st.path||[]).map(pointLatLng).filter(Boolean)));
+  return pts;
+}
+function fmtTime(d){try{return d?new Intl.DateTimeFormat("en-GB",{hour:"2-digit",minute:"2-digit"}).format(new Date(d)):"";}catch(e){return "";}}
+function transitVehicleIcon(v){const t=String(v||"").toUpperCase();if(t.includes("BUS"))return "🚌";if(t.includes("SUBWAY")||t.includes("METRO"))return "🚇";if(t.includes("LIGHT_RAIL")||t.includes("TRAM"))return "🚊";if(t.includes("FERRY"))return "⛴️";if(t.includes("TRAIN")||t.includes("RAIL"))return "🚆";return "🚍";}
+function transitDuration(route){return route?.localizedValues?.duration||route?.localizedValues?.staticDuration||(Number.isFinite(route?.durationMillis)?`${Math.round(route.durationMillis/60000)} min`:"Transit");}
+function chooseTransitAlternative(i){activeTransitAlternative=i;renderGoogleTransitRoute();}window.chooseTransitAlternative=chooseTransitAlternative;
+function renderGoogleTransitRoute(){
+  const r=transitAlternatives[activeTransitAlternative];if(!r)return;clearRouteLayer();if(guideLayer){map.removeLayer(guideLayer);guideLayer=null;}
+  const pts=googlePath(r);if(pts.length>1){routeLayer=L.polyline(pts,{color:"#0f766e",weight:6,opacity:.88}).addTo(map);map.fitBounds(routeLayer.getBounds(),{padding:[55,55],maxZoom:16});}
+  const est=$("#est-transit"),dist=$("#dist-transit"),card=$("#method-transit");if(est)est.textContent=transitDuration(r);if(dist)dist.textContent=r.localizedValues?.transitFare?`Fare ${r.localizedValues.transitFare}`:"Live scheduled route";if(card)card.classList.add("active");
+  renderTransitSteps(r);
+}
+function renderTransitSteps(r){
+  const h=$("#steps");if(!h)return;const all=(r.legs||[]).flatMap(l=>l.steps||[]);
+  const alts=transitAlternatives.length>1?`<div class="transit-altbar">${transitAlternatives.map((x,i)=>`<button class="${i===activeTransitAlternative?"active":""}" onclick="chooseTransitAlternative(${i})">${i===0?"Best":"Alt "+i} · ${esc(transitDuration(x))}</button>`).join("")}</div>`:"";
+  const rows=all.map(st=>{const mode=String(st.travelMode||"").toUpperCase(),td=st.transitDetails;
+    if(td){const line=td.transitLine||{},veh=line.vehicle||{};const label=line.shortName||line.name||veh.name||"Transit";const dep=td.departureStop?.name||"Departure stop",arr=td.arrivalStop?.name||"Arrival stop";const head=td.headsign?` toward ${td.headsign}`:"";const times=[fmtTime(td.departureTime),fmtTime(td.arrivalTime)].filter(Boolean);return `<div class="transit-step"><div class="transit-step-top"><div class="transit-icon">${transitVehicleIcon(veh.vehicleType||veh.name)}</div><div><b>${esc(label)}${esc(head)}</b><p>${esc(dep)} → ${esc(arr)}</p></div></div><div class="transit-times">${td.stopCount?`<span>${td.stopCount} stop${td.stopCount===1?"":"s"}</span>`:""}${times.length?`<span>${esc(times.join(" → "))}</span>`:""}${td.tripShortText?`<span>Trip ${esc(td.tripShortText)}</span>`:""}</div></div>`;}
+    const instr=st.instructions||(`${mode||"WALK"} segment`);const dur=st.localizedValues?.staticDuration||"";const distance=st.localizedValues?.distance||"";return `<div class="transit-step walk"><div class="transit-step-top"><div class="transit-icon">${mode==="WALK"?"🚶":"↪"}</div><div><b>${esc(mode==="WALK"?"Walk":mode||"Transfer")}</b><p>${esc(instr)}</p></div></div><div class="transit-times">${distance?`<span>${esc(distance)}</span>`:""}${dur?`<span>${esc(dur)}</span>`:""}</div></div>`;
+  }).join("");
+  h.innerHTML=`<div class="transit-head"><b>🚇 Live transit itinerary</b><small>${esc(transitDuration(r))}${r.localizedValues?.transitFare?` · ${esc(r.localizedValues.transitFare)}`:""}</small></div>${alts}${rows}<div class="route-footer">Live transit data provided through your configured Google Routes connection. Stop names, line numbers/names, headsigns, transfers and walking legs are shown when supplied by the network.</div>`;
+}
+async function drawTransitRoute(){
+  const a=getPlace(state.routeA),b=getPlace(state.routeB);if(!a||!b)return;const h=$("#steps");if(h)h.innerHTML='<div class="route-footer">Loading scheduled public transport…</div>';
+  try{
+    await ensureGoogleRoutes();const {Route}=await google.maps.importLibrary("routes");
+    const req={origin:placeQuery(a),destination:placeQuery(b),travelMode:"TRANSIT",computeAlternativeRoutes:true,transitPreference:{routingPreference:"FEWER_TRANSFERS"},fields:["path","legs","localizedValues","distanceMeters","durationMillis","viewport"]};
+    const when=$("#routeWhen")?.value;if(when){const dt=new Date(when);if(!Number.isNaN(dt.getTime()))req.departureTime=dt;}
+    const result=await Route.computeRoutes(req);const routes=result?.routes||[];if(!routes.length)throw new Error("No end-to-end public transport route was returned for this time.");transitAlternatives=routes;activeTransitAlternative=0;renderGoogleTransitRoute();toast(`Transit loaded: ${transitDuration(routes[0])}`);
+  }catch(e){drawDirectGuide();if(h)h.innerHTML=`<div class="api-note"><b>Could not load in-app transit.</b><br>${esc(e.message||"Unknown routing error")}<div class="drawer-actions"><button class="primary" onclick="openRoutingSettings()">Transit setup</button><button onclick="openGoogleRoute('${a.id}','${b.id}','transit')">Open Google Maps transit</button></div></div>`;if(String(e.message||"").includes("not configured"))openRoutingSettings();else toast("Transit route unavailable; external Google Maps is still available.");}
+}
+window.drawTransitRoute=drawTransitRoute;
+
+function clearRouteLayer(){ if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;} renderGuide(); }
+function drawDirectGuide(){
+  clearRouteLayer();
+  const a=getPlace(state.routeA),b=getPlace(state.routeB); if(!a||!b)return;
+  if(guideLayer){map.removeLayer(guideLayer);guideLayer=null;}
+  routeLayer=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:"#64748b",weight:4,opacity:.65,dashArray:"8 8"}).addTo(map);
+  $("#steps").innerHTML='<div class="route-footer">Transit route shape is not approximated here. Use “Open live transit” for the actual MRT/LRT/bus path.</div>';
+}
+const ENDPOINTS={
+  walk:"https://routing.openstreetmap.de/routed-foot/route/v1/driving/",
+  bike:"https://routing.openstreetmap.de/routed-bike/route/v1/driving/",
+  drive:"https://routing.openstreetmap.de/routed-car/route/v1/driving/"
+};
+function routeKey(mode,a,b){return `${mode}:${a.lon.toFixed(5)},${a.lat.toFixed(5)}:${b.lon.toFixed(5)},${b.lat.toFixed(5)}`;}
+async function rateLimit(){
+  const wait=Math.max(0,1100-(Date.now()-lastRouteRequest));
+  if(wait) await new Promise(r=>setTimeout(r,wait));
+  lastRouteRequest=Date.now();
+}
+async function fetchRoute(mode,a,b){
+  const key=routeKey(mode,a,b); if(routeCache[key]) return routeCache[key];
+  await rateLimit();
+  const ctrl=new AbortController(), timer=setTimeout(()=>ctrl.abort(),11000);
+  try{
+    const url=`${ENDPOINTS[mode]}${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson&steps=true`;
+    const res=await fetch(url,{signal:ctrl.signal});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    if(data.code!=="Ok"||!data.routes?.[0]) throw new Error(data.message||"No route");
+    routeCache[key]=data.routes[0]; saveRouteCache(); return data.routes[0];
+  }finally{clearTimeout(timer);}
+}
+async function drawRoute(mode,quiet=false){
+  if(mode==="transit"){openGoogleRoute(state.routeA,state.routeB,"transit");return;}
+  const a=getPlace(state.routeA),b=getPlace(state.routeB); if(!a||!b)return;
+  clearRouteLayer();
+  const steps=$("#steps"); if(steps) steps.innerHTML='<div class="route-footer">Loading route…</div>';
+  try{
+    const r=await fetchRoute(mode,a,b);
+    if(guideLayer){map.removeLayer(guideLayer);guideLayer=null;}
+    routeLayer=L.geoJSON(r.geometry,{style:{color:mode==="walk"?"#0f766e":mode==="bike"?"#7c3aed":"#0f172a",weight:5,opacity:.84}}).addTo(map);
+    map.fitBounds(routeLayer.getBounds(),{padding:[55,55],maxZoom:16});
+    const min=Math.max(1,Math.round(r.duration/60)),km=r.distance/1000;
+    const est=$("#est-"+mode),dist=$("#dist-"+mode),card=$("#method-"+mode);
+    if(est)est.textContent=`${min} min`; if(dist)dist.textContent=`${km.toFixed(1)} km routed`; if(card)card.classList.add("active");
+    renderSteps(r,mode);
+    if(!quiet) toast(`${methodLabel(mode)} route drawn: ${min} min · ${km.toFixed(1)} km`);
+  }catch(err){
+    drawDirectGuide();
+    if(steps) steps.innerHTML=`<div class="route-footer">Routing service did not respond (${esc(err.message||"network error")}). The app has fallen back to an A–B guide line; Google Maps buttons still provide navigation.</div>`;
+    if(!quiet) toast("Routing service unavailable; showing fallback line.");
+  }
+}
+window.drawRoute=drawRoute;
+function humanManeuver(step){
+  const t=(step.maneuver?.type||"continue").replace(/_/g," ").replace(/-/g," ");
+  const mod=(step.maneuver?.modifier||"");
+  const road=step.name?` on ${step.name}`:"";
+  return `${t}${mod?` ${mod}`:""}${road}`;
+}
+function renderSteps(r,mode){
+  const holder=$("#steps"); if(!holder)return;
+  const raw=r.legs?.flatMap(l=>l.steps||[])||[];
+  const useful=raw.filter(s=>s.distance>8).slice(0,9);
+  holder.innerHTML=`<b style="font-size:10px">${modeIcon(mode)} Route steps</b>`+useful.map(s=>`<div class="step"><b>${formatDist(s.distance)}</b><span>${esc(humanManeuver(s))}</span></div>`).join("")+
+  `<div class="route-footer">OSRM / OpenStreetMap route. For turn-by-turn navigation, open the leg in Google Maps.</div>`;
+}
+function formatDist(m){return m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(1)} km`;}
+
+function googleRouteUrl(a,b,mode){
+  const tm=mode==="drive"?"driving":mode==="bike"?"bicycling":mode;
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(placeQuery(a))}&destination=${encodeURIComponent(placeQuery(b))}&travelmode=${encodeURIComponent(tm)}`;
+}
+function openGoogleRoute(aId,bId,mode){
+  const a=getPlace(aId),b=getPlace(bId); if(!a||!b)return;
+  window.open(googleRouteUrl(a,b,mode),"_blank","noopener");
+}
+window.openGoogleRoute=openGoogleRoute;
+function openGoogle(id,type){
+  const p=getPlace(id); if(!p)return;
+  if(type==="search") window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeQuery(p))}`,"_blank","noopener");
+}
+window.openGoogle=openGoogle;
+
+const SLOT_WINDOWS={
+  "breakfast":[390,600],"morning":[480,720],"late-morning":[600,780],"midday":[660,840],
+  "lunch":[690,870],"afternoon":[780,1050],"early-evening":[990,1170],"evening":[1080,1320],
+  "night":[1140,1435],"daytrip":[420,1200]
+};
+function timeMinutes(v){
+  const m=String(v||"").match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;
+  const h=Number(m[1]),min=Number(m[2]);return h>=0&&h<24&&min>=0&&min<60?h*60+min:null;
+}
+function clockText(v){v=Math.max(0,Math.min(1439,Math.round(v)));return `${String(Math.floor(v/60)).padStart(2,"0")}:${String(v%60).padStart(2,"0")}`;}
+function openingWindow(p){
+  const txt=String(p?.hours||"");
+  if(!txt||/24\s*(?:hours?|hrs?)/i.test(txt))return null;
+  const ranges=[...txt.matchAll(/(?:^|[^\d])(\d{1,2})(?::(\d{2}))?\s*(?:–|—|-|to)\s*(\d{1,2})(?::(\d{2}))?/gi)].map(m=>{
+    const a=Number(m[1])*60+Number(m[2]||0),b=Number(m[3])*60+Number(m[4]||0);return a<1440&&b<=1440&&b>a?[a,b]:null;
+  }).filter(Boolean);
+  if(!ranges.length)return null;
+  // Free-text opening hours can contain weekday-specific alternatives. Using the
+  // widest parsed interval is deliberately conservative: the explicit planned
+  // time remains the stronger constraint and we avoid inventing a false closure.
+  return ranges.sort((a,b)=>(b[1]-b[0])-(a[1]-a[0]))[0];
+}
+function optimizerTravelMinutes(a,b){
+  if(!a||!b||![a.lat,a.lon,b.lat,b.lon].every(Number.isFinite))return 18;
+  const mode=recommendMode(a,b);return estimate(mode,a,b).min;
+}
+function optimizerStartMinute(arr){
+  const explicit=arr.map(p=>timeMinutes(p.time)).filter(Number.isFinite);
+  if(explicit.length)return Math.max(300,Math.min(...explicit)-75);
+  const slotStarts=arr.map(p=>SLOT_WINDOWS[p.slot]?.[0]).filter(Number.isFinite);
+  return slotStarts.length?Math.max(360,Math.min(...slotStarts)-30):480;
+}
+function timedTarget(p){return timeMinutes(p?.time);}
+function earliestRemainingTimed(arr,mask,skipIndex=-1){
+  let best=null;
+  for(let i=0;i<arr.length;i++){
+    if(i===skipIndex)continue;
+    const bit=1n<<BigInt(i);if(mask&bit)continue;
+    const t=timedTarget(arr[i]);
+    if(Number.isFinite(t)&&(!best||t<best.target))best={index:i,target:t,place:arr[i]};
+  }
+  return best;
+}
+function optimizerTransition(last,now,p,depth){
+  const travel=optimizerTravelMinutes(last,p),arrival=now+travel;
+  let start=arrival,score=travel,wait=0;
+  const target=timedTarget(p),slot=SLOT_WINDOWS[p.slot]||null,open=openingWindow(p);
+  const importance=p.priority==="High"?1.45:p.priority==="Optional"?.72:1;
+
+  if(open){
+    if(start<open[0]){wait+=open[0]-start;score+=(open[0]-start)*.08;start=open[0];}
+    if(start>open[1])score+=(start-open[1])*42*importance+3600*importance;
+  }
+
+  // Explicit HH:MM values are chronological anchors. We can arrive early and
+  // wait, but never reorder a later explicit time ahead of an earlier one.
+  if(Number.isFinite(target)){
+    if(start<target){const w=target-start;wait+=w;score+=w*.55;start=target;}
+    else if(start>target+8){score+=(start-target-8)*20*importance+Math.min(900,(start-target)*2);}
+    else score+=Math.abs(start-target)*.1;
+  }else if(slot){
+    if(start<slot[0]){const w=slot[0]-start;wait+=w;score+=w*.10;start=slot[0];}
+    if(start>slot[1])score+=(start-slot[1])*5.5*importance;
+  }
+
+  const duration=Math.max(5,Number(p.duration||45));
+  const depart=start+duration;
+  if(open&&depart>open[1])score+=(depart-open[1])*22*importance;
+  score+=Math.abs((Number(p.order)||depth+1)-(depth+1))*.08;
+  return {score,start,depart,travel,wait,target};
+}
+function optimizeTimeAware(arr,sb,eb){
+  const n=arr.length,start=optimizerStartMinute(arr),width=n>18?100:220;
+  let beam=[{mask:0n,last:sb||null,now:start,score:0,order:[],timeline:[]}];
+  for(let depth=0;depth<n;depth++){
+    const next=[];
+    for(const st of beam){
+      const earliest=earliestRemainingTimed(arr,st.mask);
+      for(let i=0;i<n;i++){
+        const bit=1n<<BigInt(i);if(st.mask&bit)continue;
+        const p=arr[i],target=timedTarget(p);
+
+        // Hard precedence for explicit times. Equal-time anchors can still be
+        // ordered geographically, but 20:00 can never precede 14:15.
+        if(Number.isFinite(target)&&earliest&&target>earliest.target)continue;
+
+        const ev=optimizerTransition(st.last,st.now,p,depth);
+        let extra=0;
+        const mask2=st.mask|bit;
+        const nextAnchor=earliestRemainingTimed(arr,mask2);
+        if(nextAnchor){
+          const eta=ev.depart+optimizerTravelMinutes(p,nextAnchor.place);
+          const slack=nextAnchor.target-eta;
+          // Protect the next explicit time before spending the gap on untimed
+          // places. Negative slack gets progressively expensive.
+          if(slack<0)extra+=Math.abs(slack)*36+1800;
+          else if(slack<20)extra+=(20-slack)*5;
+        }
+        next.push({mask:mask2,last:p,now:ev.depart,score:st.score+ev.score+extra,order:[...st.order,p],timeline:[...st.timeline,{id:p.id,start:ev.start,depart:ev.depart,travel:ev.travel,wait:ev.wait,target:ev.target}]});
+      }
+    }
+    if(!next.length)return null;
+    next.sort((a,b)=>a.score-b.score);
+    beam=next.slice(0,width);
+  }
+  for(const st of beam){if(eb)st.score+=optimizerTravelMinutes(st.last,eb)*.65;}
+  beam.sort((a,b)=>a.score-b.score);return beam[0]||null;
+}
+function smartOptimize(){
+  if(state.day==="all"){toast("Choose a single day before optimizing.");return;}
+  const arr=activePlaces(); if(arr.length<2){toast("Add at least two stops before optimizing.");return;}
+  undoSnapshot=clone(state.places);
+  const result=optimizeTimeAware(arr,startBase(state.day),endBase(state.day));
+  if(!result){toast("Could not calculate an optimized order.");return;}
+  result.order.forEach((p,i)=>{const q=state.places.find(x=>x.id===p.id);if(q)q.order=i+1;});
+  save();renderAll();
+  const anchors=result.timeline.filter(x=>Number.isFinite(x.target));
+  const late=anchors.filter(x=>x.start>x.target+10).length;
+  const finish=result.timeline.length?clockText(result.timeline[result.timeline.length-1].depart):"";
+  const msg=`Smart optimize applied · ${anchors.length} time anchor${anchors.length===1?"":"s"} kept chronological${late?` · ${late} projected late`:""}${finish?` · finish ${finish}`:""}.`;
+  toast(msg,true);
+}
+$("#optimizeBtn").onclick=smartOptimize;
+function undo(){
+  if(!undoSnapshot)return; state.places=undoSnapshot;undoSnapshot=null;save();renderAll();toast("Optimization reverted.");
+}
+window.undo=undo;
+
+function addLegacy(id){
+  const p=LEGACY_PLACES.find(x=>x.id===id); if(!p)return;
+  const copy=clone(p);copy.day=state.day==="all"?(tripDates()[0]||currentTrip.startDate||new Date().toISOString().slice(0,10)):state.day;copy.order=activePlaces().length+1;copy.priority="Optional";
+  copy.time="13:00";
+  state.places.push(copy);save();state.selected=null;renderAll();closeInfo();toast(`${p.name} added. Drag it to the position you want.`);
+}
+window.addLegacy=addLegacy;
+$("#legacyBtn").onclick=()=>{if(!currentTrip?.seed)return;state.showLegacy=!state.showLegacy;renderAll();if(state.showLegacy) fitVisible();};
+
+function fitVisible(){
+  const pair=dayBasePair();
+  const ps=[...(state.day==="all"?allBases():[pair.start,pair.end]).filter(Boolean),...activePlaces(),...(state.showLegacy&&currentTrip?.seed?LEGACY_PLACES:[])].filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+  if(ps.length===1)map.setView([ps[0].lat,ps[0].lon],13);
+  else if(ps.length>1)map.fitBounds(ps.map(p=>[p.lat,p.lon]),{padding:[45,45],maxZoom:13});
+  else if(currentTrip?.center)map.setView([currentTrip.center.lat,currentTrip.center.lon],11);
+}
+$("#baseCard").onclick=()=>openBaseManager(state.day!=="all"?state.day:null);
+$("#tripsBtn").onclick=()=>openTripActions(currentTrip?.id,true);
+$("#importPlacesBtn").onclick=openPlacesImport;
+
+function dayOptions(selected){return tripDates().map(d=>`<option value="${d}" ${selected===d?"selected":""}>${esc(dayLabel(d))}</option>`).join("");}
+function plusDays(date,n){const d=new Date((date||new Date().toISOString().slice(0,10))+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function openAddMenu(){
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Add to ${esc(currentTrip?.name||"trip")}</h2><div class="action-grid"><button class="primary" onclick="closeModal();openEditor()">+ Destination<small>Add a place to an existing trip day.</small></button><button onclick="openBaseEditor()">+ Base / lodging<small>Add another hotel, villa or overnight stage base.</small></button><button onclick="extendTripOneDay(true)">+ Trip day<small>Extend the trip by one day and immediately add the first destination for it.</small></button><button onclick="openBaseManager()">Manage stage bases<small>Choose different start/end bases for each day.</small></button><button onclick="openEditTripDates()">Edit date range<small>Change the start/end dates directly.</small></button><button onclick="closeModal();openPlacesImport()">Import places<small>Bulk-add CSV, KML, JSON or pasted locations.</small></button></div><div class="modal-actions"><button onclick="closeModal()">Close</button></div></div></div>`;
+}
+window.openAddMenu=openAddMenu;
+function extendTripOneDay(openPlace=true){
+  if(!currentTrip)return;
+  const oldEnd=currentTrip.endDate||currentTrip.startDate||new Date().toISOString().slice(0,10);
+  const next=plusDays(oldEnd,1);
+  currentTrip.endDate=next;
+  if(!currentTrip.startDate)currentTrip.startDate=oldEnd;
+  currentTrip.dayBases=currentTrip.dayBases||{};const prev=currentTrip.dayBases[oldEnd]||{};const carry=prev.endBaseId||prev.startBaseId||currentTrip.baseId||defaultBase()?.id;currentTrip.dayBases[next]={startBaseId:carry,endBaseId:carry};
+  const ix=library.trips.findIndex(t=>t.id===currentTrip.id);
+  if(ix>=0)library.trips[ix]=currentTrip;
+  saveLibrary();
+  state.day=next;
+  if(openPlace){
+    closeModal();
+    renderAll();
+    setTimeout(()=>{fitVisible();openEditor();},0);
+    toast(`Trip extended to ${dayLabel(next)}.`);
+  }else{
+    const sel=$("#fDay");
+    if(sel){sel.innerHTML=dayOptions(next);sel.value=next;}
+    toast(`Added ${dayLabel(next)}.`);
+  }
+}
+window.extendTripOneDay=extendTripOneDay;
+function openEditTripDates(){const start=currentTrip?.startDate||new Date().toISOString().slice(0,10),end=currentTrip?.endDate||start;$("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Edit trip dates</h2><div class="form-grid"><div class="field"><label>Start date</label><input id="edStart" type="date" value="${start}"></div><div class="field"><label>End date</label><input id="edEnd" type="date" value="${end}"></div></div><div class="status">Stops outside the new range are not deleted; their saved dates remain available until you move or remove them.</div><div class="modal-actions"><button onclick="closeModal()">Cancel</button><button class="primary" onclick="saveTripDates()">Save dates</button></div></div></div>`;}
+window.openEditTripDates=openEditTripDates;
+function saveTripDates(){let a=$("#edStart").value,b=$("#edEnd").value;if(!a||!b)return;if(b<a)[a,b]=[b,a];currentTrip.startDate=a;currentTrip.endDate=b;ensureTripSchema(currentTrip);const ix=library.trips.findIndex(t=>t.id===currentTrip.id);if(ix>=0)library.trips[ix]=currentTrip;saveLibrary();if(state.day!=="all"&&!tripDates().includes(state.day))state.day=a;closeModal();renderAll();toast("Trip dates updated.");}
+window.saveTripDates=saveTripDates;
+function baseOptions(selected){return allBases().map(b=>`<option value="${esc(b.id)}" ${selected===b.id?"selected":""}>${esc(b.name||"Trip base")}</option>`).join("");}
+function openBaseManager(day=null){
+  if(!currentTrip)return;ensureTripSchema(currentTrip);
+  const days=tripDates();const d=(day&&days.includes(day))?day:(state.day!=="all"&&days.includes(state.day)?state.day:(days[0]||currentTrip.startDate));
+  const pair=dayBasePair(d), bs=allBases();
+  const rows=bs.map(b=>`<div class="base-row"><div><b>${esc(b.name||"Trip base")}${b.id===currentTrip.baseId?' <span class="chip">default</span>':''}</b><small>${esc(b.locale?b.locale+(b.address?" · "+b.address:""):(b.address||"No address saved"))}</small></div><div class="base-row-actions"><button onclick="openBaseEditor('${b.id}')">Edit</button>${b.id!==currentTrip.baseId?`<button onclick="makeDefaultBase('${b.id}')">Default</button>`:""}${bs.length>1?`<button onclick="removeBase('${b.id}')">Remove</button>`:""}</div></div>`).join("");
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Bases & stage stays</h2>
+    <div class="status">A day can start at one base and end at another. This is useful for transfer days such as Kaohsiung → Alishan, then Alishan → Taichung the next day.</div>
+    <div class="stage-box"><h3>Base assignment for <select id="bmDay" onchange="openBaseManager(this.value)">${days.map(x=>`<option value="${x}" ${x===d?"selected":""}>${esc(dayLabel(x))}</option>`).join("")}</select></h3>
+      <div class="stage-pair"><div class="field"><label>Start base</label><select id="bmStart">${baseOptions(pair.start?.id)}</select></div><div class="stage-arrow">→</div><div class="field"><label>End base</label><select id="bmEnd">${baseOptions(pair.end?.id)}</select></div></div>
+      <label style="display:flex;align-items:center;gap:7px;font-size:11px;margin-top:7px"><input id="bmCarry" type="checkbox" checked> Carry this end base into the next day as its start base</label>
+      <div class="drawer-actions"><button class="primary" onclick="saveDayBases('${d}')">Save this day</button><button onclick="sameDayBase()">End = start</button><button onclick="applyBaseToAllDays('${d}')">Use start base for all days</button></div>
+    </div>
+    <div class="drawer-actions"><button class="primary" onclick="openBaseEditor()">+ Add base / lodging</button></div>
+    <div class="base-list">${rows||'<div class="status">No bases yet.</div>'}</div>
+    <div class="modal-actions"><button onclick="closeModal()">Close</button></div></div></div>`;
+}
+window.openBaseManager=openBaseManager;
+function sameDayBase(){const a=$("#bmStart"),b=$("#bmEnd");if(a&&b)b.value=a.value;}window.sameDayBase=sameDayBase;
+function saveDayBases(day){
+  const s=$("#bmStart")?.value,e=$("#bmEnd")?.value;if(!s||!e)return;
+  currentTrip.dayBases=currentTrip.dayBases||{};currentTrip.dayBases[day]={startBaseId:s,endBaseId:e};
+  const days=tripDates(),ix=days.indexOf(day),next=days[ix+1];if(next&&$("#bmCarry")?.checked){const n=currentTrip.dayBases[next]||{};currentTrip.dayBases[next]={startBaseId:e,endBaseId:n.endBaseId||e};}
+  const li=library.trips.findIndex(t=>t.id===currentTrip.id);if(li>=0)library.trips[li]=clone(currentTrip);saveLibrary();renderAll();fitVisible();openBaseManager(day);toast("Stage bases updated.");
+}
+window.saveDayBases=saveDayBases;
+function applyBaseToAllDays(day){const id=$("#bmStart")?.value;if(!id)return;currentTrip.dayBases=currentTrip.dayBases||{};tripDates().forEach(d=>currentTrip.dayBases[d]={startBaseId:id,endBaseId:id});const li=library.trips.findIndex(t=>t.id===currentTrip.id);if(li>=0)library.trips[li]=clone(currentTrip);saveLibrary();renderAll();openBaseManager(day);toast("That base is now used for every day.");}window.applyBaseToAllDays=applyBaseToAllDays;
+function makeDefaultBase(id){const b=state.places.find(p=>p.id===id&&isBasePlace(p));if(!b)return;currentTrip.baseId=id;const li=library.trips.findIndex(t=>t.id===currentTrip.id);if(li>=0)library.trips[li]=clone(currentTrip);saveLibrary();renderAll();openBaseManager();toast(`${b.name} is the default base for new days.`);}window.makeDefaultBase=makeDefaultBase;
+function openBaseEditor(id=null){
+  const b=id?state.places.find(p=>p.id===id&&isBasePlace(p)):null;const v=b?clone(b):{name:"",zh:"",address:"",locale:currentTrip?.region||"",lat:null,lon:null,category:"Hotel / base",hours:"",note:"",source:""};
+  const d=state.day!=="all"?state.day:(tripDates()[0]||"");
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>${b?"Edit base / lodging":"Add base / lodging"}</h2><div class="form-grid">
+    <div class="field"><label>Name</label><input id="fName" value="${esc(v.name)}" placeholder="e.g. Ruili Tea Villa"></div><div class="field"><label>Alternate name</label><input id="fZh" value="${esc(v.zh||"")}"></div>
+    <div class="field full"><label>Address (saved for reference/export)</label><input id="fAddress" value="${esc(v.address||"")}"></div>
+    <div class="field full"><label>Lookup locale</label><input id="fLocale" value="${esc(v.locale||currentTrip?.region||"")}" placeholder="e.g. Alishan, Taiwan"><div class="status">Routing/geocoding uses “base name + locale”, never the street address.</div></div>
+    <div class="field"><label>Category</label><input id="fCategory" value="${esc(v.category||"Hotel / base")}"></div><div class="field"><label>Opening/check-in notes</label><input id="fHours" value="${esc(v.hours||"")}"></div>
+    <div class="field"><label>Latitude</label><input id="fLat" type="number" step="any" value="${Number.isFinite(v.lat)?v.lat:""}"></div><div class="field"><label>Longitude</label><input id="fLon" type="number" step="any" value="${Number.isFinite(v.lon)?v.lon:""}"></div>
+    <div class="field full"><label>Notes</label><textarea id="fNote">${esc(v.note||"")}</textarea></div><div class="field full"><label>Source URL (optional)</label><input id="fSource" value="${esc(v.source||"")}"><div class="status" id="geoStatus">Locate base searches by base name + trip locale; the street address is not used for lookup.</div></div>
+    ${!b&&d?`<div class="field full"><label>After saving</label><select id="fBaseAssign"><option value="none">Just add it to this trip</option><option value="end">Use as end base for ${esc(dayLabel(d))}</option><option value="start">Use as start base for ${esc(dayLabel(d))}</option><option value="both">Use as start & end base for ${esc(dayLabel(d))}</option></select></div>`:""}
+  </div><div class="modal-actions"><button onclick="openBaseManager('${d}')">Cancel</button><button onclick="locateEditor()">Locate base</button><button class="primary" onclick="saveBaseEditor('${id||""}','${d}')">${b?"Save changes":"Add base"}</button></div></div></div>`;
+}
+window.openBaseEditor=openBaseEditor;
+async function saveBaseEditor(id,day){
+  const name=$("#fName")?.value.trim();if(!name){toast("Base name is required.");return;}const target=id?state.places.find(p=>p.id===id&&isBasePlace(p)):null;
+  let lat=Number($("#fLat")?.value),lon=Number($("#fLon")?.value);if(!Number.isFinite(lat)||!Number.isFinite(lon)){try{const g=await geocodeAddress(placeQuery({name,locale:$("#fLocale")?.value.trim()||currentTrip?.region||""}));lat=g.lat;lon=g.lon;}catch(e){toast("Could not locate this base by name + trip locale. Use Locate base or enter coordinates.");return;}}
+  const b=target||{id:`base_${Date.now()}`,rating:null,reviews:null};Object.assign(b,{name,zh:$("#fZh")?.value.trim()||"",address:$("#fAddress")?.value.trim()||"",locale:$("#fLocale")?.value.trim()||currentTrip?.region||"",lat,lon,category:$("#fCategory")?.value.trim()||"Hotel / base",hours:$("#fHours")?.value.trim()||"",note:$("#fNote")?.value.trim()||"",source:$("#fSource")?.value.trim()||"",day:"Base",order:0,time:"Start / end",duration:0,slot:"base",priority:"Base",synthetic:false,isBase:true});
+  if(!target){state.places.unshift(b);if(!currentTrip.baseId)currentTrip.baseId=b.id;const a=$("#fBaseAssign")?.value||"none";if(day&&a!=="none"){currentTrip.dayBases=currentTrip.dayBases||{};const old=currentTrip.dayBases[day]||{startBaseId:defaultBase()?.id,endBaseId:defaultBase()?.id};if(a==="start")old.startBaseId=b.id;else if(a==="end")old.endBaseId=b.id;else old.startBaseId=old.endBaseId=b.id;currentTrip.dayBases[day]=old;}}
+  save();ensureTripSchema(currentTrip);const li=library.trips.findIndex(t=>t.id===currentTrip.id);if(li>=0)library.trips[li]=clone(currentTrip);saveLibrary();renderAll();fitVisible();openBaseManager(day);toast(target?"Base updated.":"Base added.");
+}
+window.saveBaseEditor=saveBaseEditor;
+function removeBase(id){
+  const b=state.places.find(p=>p.id===id&&isBasePlace(p));if(!b||allBases().length<=1)return;if(!confirm(`Remove ${b.name} as a trip base? Stops are not deleted.`))return;
+  const fallback=allBases().find(x=>x.id!==id);state.places=state.places.filter(p=>p.id!==id);if(currentTrip.baseId===id)currentTrip.baseId=fallback.id;currentTrip.dayBases=currentTrip.dayBases||{};Object.keys(currentTrip.dayBases).forEach(d=>{const x=currentTrip.dayBases[d];if(x.startBaseId===id)x.startBaseId=fallback.id;if(x.endBaseId===id)x.endBaseId=fallback.id;});save();const li=library.trips.findIndex(t=>t.id===currentTrip.id);if(li>=0)library.trips[li]=clone(currentTrip);saveLibrary();renderAll();fitVisible();openBaseManager();toast("Base removed.");
+}
+window.removeBase=removeBase;
+function openEditor(id=null){
+  const p=id?getPlace(id):null;const isNew=!p;const isBase=!!p&&isBasePlace(p);
+  const day=state.day==="all"?(tripDates()[0]||currentTrip?.startDate||new Date().toISOString().slice(0,10)):state.day;
+  const v=p?clone(p):{name:"",zh:"",address:"",locale:stageLocaleForDay(day),lat:null,lon:null,category:"Place",rating:null,reviews:null,hours:"",day,order:activePlaces().length+1,time:"",duration:45,slot:"afternoon",priority:"Medium",note:"",source:""};
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal">
+    <h2>${isBase?"Edit trip base":isNew?"Add destination":"Edit destination"}</h2>
+    <div class="form-grid">
+      <div class="field"><label>Name</label><input id="fName" value="${esc(v.name)}"></div>
+      <div class="field"><label>Alternate name</label><input id="fZh" value="${esc(v.zh||"")}"></div>
+      <div class="field full"><label>Address (saved for reference/export)</label><input id="fAddress" value="${esc(v.address||"")}"><div class="status">Street address is not used as the lookup query.</div></div><div class="field full"><label>Lookup locale</label><input id="fLocale" value="${esc(v.locale||stageLocaleForDay(v.day)||"")}" placeholder="e.g. Kaohsiung, Taiwan"><div class="status">Lookup uses “stop name + locale”. Change this per stop when a trip spans multiple cities/regions.</div></div>
+      ${isBase?"":`<div class="field"><label>Day</label><div class="inline-day"><select id="fDay">${dayOptions(v.day)}</select><button type="button" title="Extend trip by one day" onclick="extendTripOneDay(false)">+ day</button></div></div><div class="field"><label>Suggested time</label><input id="fTime" type="time" value="${esc(v.time||"")}"></div>`}
+      <div class="field"><label>Category</label><input id="fCategory" value="${esc(v.category||"")}"></div>
+      ${isBase?"":`<div class="field"><label>Priority</label><select id="fPriority">${["High","Medium","Optional"].map(x=>`<option ${v.priority===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="field"><label>Duration (min)</label><input id="fDuration" type="number" min="0" step="5" value="${Number(v.duration||45)}"></div><div class="field"><label>Daypart constraint</label><select id="fSlot">${Object.keys(SLOT_RANK).map(x=>`<option value="${x}" ${v.slot===x?"selected":""}>${x}</option>`).join("")}</select></div>`}
+      <div class="field full"><label>Opening hours</label><input id="fHours" value="${esc(v.hours||"")}"></div>
+      <div class="field"><label>Latitude</label><input id="fLat" type="number" step="any" value="${Number.isFinite(v.lat)?v.lat:""}"></div>
+      <div class="field"><label>Longitude</label><input id="fLon" type="number" step="any" value="${Number.isFinite(v.lon)?v.lon:""}"></div>
+      <div class="field full"><label>Notes</label><textarea id="fNote">${esc(v.note||"")}</textarea></div>
+      <div class="field full"><label>Source URL (optional)</label><input id="fSource" value="${esc(v.source||"")}"><div class="status" id="geoStatus">If coordinates are blank, Locate place searches by stop name + trip locale (for example, “周記小籠包, Kaohsiung, Taiwan”). Street addresses are kept for display/export but are not used in lookup queries.</div></div>
+    </div>
+    <div class="modal-actions"><button onclick="closeModal()">Cancel</button><button onclick="locateEditor()">Locate place</button><button class="primary" onclick="saveEditor('${id||""}')">${isNew?"Add place":"Save changes"}</button></div>
+  </div></div>`;
+}
+window.openEditor=openEditor;
+$("#addBtn").onclick=openAddMenu;
+function closeModal(){ $("#modalHost").innerHTML=""; }
+window.closeModal=closeModal;
+async function geocodeThrottle(){const wait=Math.max(0,1100-(Date.now()-lastGeocodeRequest));if(wait)await new Promise(r=>setTimeout(r,wait));lastGeocodeRequest=Date.now();}
+async function geocodeAddress(q){
+  await geocodeThrottle();
+  const res=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`,{headers:{"Accept-Language":"en"}});
+  if(!res.ok)throw new Error(`Geocoder HTTP ${res.status}`);
+  const d=await res.json(); if(!d[0])throw new Error("No match found");
+  return {lat:Number(d[0].lat),lon:Number(d[0].lon),display:d[0].display_name};
+}
+async function reverseGeocode(lat,lon,zoom=10){
+  await geocodeThrottle();
+  const res=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=${zoom}&lat=${lat}&lon=${lon}`,{headers:{"Accept-Language":"en"}});
+  if(!res.ok)throw new Error(`Reverse geocoder HTTP ${res.status}`);
+  const d=await res.json();const a=d.address||{};
+  return {display:d.display_name||"",region:[a.city||a.town||a.village||a.county,a.state,a.country].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(", ")};
+}
+async function locateEditor(){
+  const q=placeQuery({name:$("#fName").value.trim(),locale:$("#fLocale")?.value.trim()||"",day:$("#fDay")?.value||state.day}); if(!q)return;
+  $("#geoStatus").textContent="Locating…";
+  try{
+    const r=await geocodeAddress(q);$("#fLat").value=r.lat;$("#fLon").value=r.lon;$("#geoStatus").textContent=`Found: ${r.display}`;
+  }catch(e){$("#geoStatus").textContent=`Could not locate automatically: ${e.message}. You can paste coordinates manually.`}
+}
+window.locateEditor=locateEditor;
+async function saveEditor(id){
+  const name=$("#fName").value.trim(),address=$("#fAddress").value.trim();if(!name){toast("Name is required.");return;}
+  const target=id?state.places.find(p=>p.id===id):null;const isBase=!!target&&isBasePlace(target);
+  const latRaw=$("#fLat").value.trim(),lonRaw=$("#fLon").value.trim(),locale=$("#fLocale")?.value.trim()||stageLocaleForDay($("#fDay")?.value||target?.day)||currentTrip?.region||"";
+  let lat=Number(latRaw),lon=Number(lonRaw);
+  const lookupChanged=!!target && (name!==String(target.name||"").trim() || locale!==String(target.locale||stageLocaleForDay(target.day)||currentTrip?.region||"").trim());
+  const coordsEdited=!!target && Number.isFinite(lat)&&Number.isFinite(lon) && (!Number.isFinite(target.lat)||!Number.isFinite(target.lon)||Math.abs(lat-target.lat)>1e-8||Math.abs(lon-target.lon)>1e-8);
+  if(lookupChanged && !coordsEdited){
+    try{const r=await geocodeAddress(placeQuery({name,locale:$("#fLocale")?.value.trim()||"",day:$("#fDay")?.value||target?.day}));lat=r.lat;lon=r.lon;}catch(e){toast("The stop changed, but I could not relocate it by name + trip locale. Use Locate place or update the coordinates.");return;}
+  } else if(!Number.isFinite(lat)||!Number.isFinite(lon)){
+    try{const r=await geocodeAddress(placeQuery({name,locale:$("#fLocale")?.value.trim()||"",day:$("#fDay")?.value||target?.day}));lat=r.lat;lon=r.lon;}catch(e){toast("Could not locate this place by name + trip locale. Use Locate place or enter coordinates.");return;}
+  }
+  const baseObj=target||{id:`p_${Date.now()}`,order:999,rating:null,reviews:null};
+  Object.assign(baseObj,{name,zh:$("#fZh").value.trim(),address,locale,lat,lon,category:$("#fCategory").value.trim()||(isBase?"Hotel / base":"Place"),hours:$("#fHours").value.trim(),note:$("#fNote").value.trim(),source:$("#fSource").value.trim()});
+  if(isBase){Object.assign(baseObj,{day:"Base",order:0,time:"Start / end",duration:0,slot:"base",priority:"Base",synthetic:false,isBase:true});if(!currentTrip.baseId)currentTrip.baseId=baseObj.id;}
+  else Object.assign(baseObj,{day:$("#fDay").value,time:$("#fTime").value,priority:$("#fPriority").value,duration:Number($("#fDuration").value||45),slot:$("#fSlot").value});
+  if(!target){baseObj.order=state.places.filter(p=>p.day===baseObj.day&&!isBasePlace(p)).length+1;state.places.push(baseObj);}
+  normalizeOrders();if(!isBase&&hotel()?.synthetic)await localizeTripFromPlaces(true);save();closeModal();if(!isBase)state.day=baseObj.day;renderAll();fitVisible();showPlace(baseObj.id);toast(target?"Place updated.":"Place added.");
+}
+window.saveEditor=saveEditor;
+function removePlace(id){
+  const p=state.places.find(x=>x.id===id);if(!p||isBasePlace(p))return;
+  if(!confirm(`Remove ${p.name} from this planner?`))return;
+  state.places=state.places.filter(x=>x.id!==id);normalizeOrders();save();closeInfo();renderAll();toast("Place removed.");
+}
+window.removePlace=removePlace;
+function normalizeOrders(){
+  tripDates().forEach(day=>state.places.filter(p=>p.day===day&&!isBasePlace(p)).sort((a,b)=>(a.order||0)-(b.order||0)).forEach((p,i)=>p.order=i+1));
+}
+
+function csvEscape(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
+function download(name,text,type){
+  const blob=new Blob([text],{type});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+function exportCSV(){
+  const heads=["Name","Location","Locale","Latitude","Longitude","Day","Order","Suggested Time","Category","Priority","Opening Hours","Suggested Duration (min)","Notes"];
+  const rows=state.places.map(p=>[p.name,p.address,p.locale||"",p.lat,p.lon,p.day,p.order,p.time,p.category,p.priority,p.hours,p.duration,p.note]);
+  const csv="\uFEFF"+[heads,...rows].map(r=>r.map(csvEscape).join(",")).join("\r\n");
+  download(`${safeSlug(currentTrip?.name)}_mymaps.csv`,csv,"text/csv;charset=utf-8");toast("CSV exported. Google My Maps can position by Location or Latitude/Longitude.");
+}
+$("#exportBtn").onclick=exportCSV;
+function exportJSON(){download(`${safeSlug(currentTrip?.name)}_route_studio.json`,JSON.stringify({version:4,trip:currentTrip},null,2),"application/json");toast("Trip backup exported.");}
+$("#backupBtn").onclick=exportJSON;
+$("#backupBtn").ondblclick=()=>openTripImport();
+$("#resetBtn").onclick=()=>{
+  if(!currentTrip)return;
+  if(currentTrip.seed){if(!confirm("Reset the Kaohsiung starter trip to its shipped itinerary?"))return;const fresh=seedTrip();currentTrip.places=clone(fresh.places);currentTrip.dayBases=clone(fresh.dayBases);currentTrip.baseId=fresh.baseId;state.places=clone(fresh.places);}
+  else{if(!confirm("Clear all destinations from this trip? Your trip name/dates remain."))return;state.places=state.places.filter(isBasePlace);currentTrip.places=clone(state.places);}
+  save();state.day=tripDates()[0]||"all";renderAll();fitVisible();toast("Trip reset.");
+};
+function toast(msg,withUndo=false){
+  const t=$("#toast");t.innerHTML=`<span>${esc(msg)}</span>${withUndo?`<button onclick="undo()">Undo</button>`:""}`;t.classList.remove("hidden");
+  clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add("hidden"),withUndo?6500:3600);
+}
+
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  const tag=(document.activeElement?.tagName||"").toLowerCase();
+  if($("#modalHost")?.children.length && ["input","select","textarea"].includes(tag))return;
+  closeInfo();$("#routeDrawer").classList.add("hidden");closeModal();
+});
+window.showPlace=showPlace;
+window.cardClick=cardClick;
+
+
+
+/* ---------- Trip library ---------- */
+function renderTripGate(){
+  const grid=$("#tripGrid");
+  const sorted=library.trips.slice().sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||"")));
+  if(!sorted.length){grid.innerHTML='<div class="trip-empty">No trips yet. Create one, then drop in your saved places.</div>';return;}
+  grid.innerHTML=sorted.map(t=>{const n=(t.places||[]).filter(p=>!isBasePlace(p)).length;return `<div class="trip-card" onclick="selectTrip('${t.id}')"><button class="card-menu" title="Trip actions" onclick="event.stopPropagation();openTripActions('${t.id}')">•••</button><h3>${esc(t.name)}</h3><p>${esc(t.region||"Region will be inferred from your places")}</p><div class="trip-meta"><span class="trip-mini">${esc(dateRangeLabel(t))}</span><span class="trip-mini">${n} place${n===1?"":"s"}</span>${t.seed?'<span class="trip-mini">Starter</span>':""}</div></div>`}).join("");
+}
+function showTripGate(){if(currentTrip)save();renderTripGate();$("#tripGate").classList.remove("hidden");}
+window.showTripGate=showTripGate;
+function selectTrip(id){
+  const t=tripById(id);if(!t)return;ensureTripSchema(t);currentTripId=id;currentTrip=clone(t);ensureTripSchema(currentTrip);state.places=clone(currentTrip.places||[]);state.day=tripDates(currentTrip)[0]||"all";state.mode="browse";state.selected=null;state.routeA=state.routeB=null;state.showLegacy=false;clearRouteLayer();
+  localStorage.setItem(ACTIVE_KEY,id);$("#tripGate").classList.add("hidden");renderAll();setTimeout(()=>{map.invalidateSize();fitVisible();},120);
+}
+window.selectTrip=selectTrip;
+function openCreateTrip(){
+  const today=new Date().toISOString().slice(0,10);
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Make a new trip</h2><div class="form-grid"><div class="field full"><label>Trip name</label><input id="ctName" placeholder="e.g. Tokyo · Spring 2027"></div><div class="field full"><label>Destination / region (optional)</label><input id="ctRegion" placeholder="Can be left blank — imported places can localise it"></div><div class="field"><label>Start date</label><input id="ctStart" type="date" value="${today}"></div><div class="field"><label>End date</label><input id="ctEnd" type="date" value="${today}"></div><div class="field full"><label>Hotel / trip base (optional)</label><input id="ctBase" placeholder="Hotel/place name is best. You can set or edit the street address later."></div><div class="field full"><div class="status">If you leave the region/base blank, Route Studio will fit the map and infer the region after you import locations.</div></div></div><div class="modal-actions"><button onclick="closeModal()">Cancel</button><button class="primary" onclick="createTripFromForm()">Create trip</button></div></div></div>`;
+}
+window.openCreateTrip=openCreateTrip;
+async function createTripFromForm(){
+  const name=$("#ctName").value.trim()||"Untitled trip",region=$("#ctRegion").value.trim(),baseQuery=$("#ctBase").value.trim();let start=$("#ctStart").value,end=$("#ctEnd").value;if(end<start)[start,end]=[end,start];
+  const id=`trip_${Date.now()}`;let b={id:"hotel",name:baseQuery||"Trip base",zh:"",address:baseQuery||region||"",lat:null,lon:null,category:"Hotel / base",rating:null,reviews:null,hours:"Base",day:"Base",order:0,time:"Start / end",duration:0,slot:"base",priority:"Base",note:"Click to set your actual hotel/start point.",source:"",locale:region||"",synthetic:!baseQuery,isBase:true};
+  const q=baseQuery||region;if(q){try{const g=await geocodeAddress(q);b.lat=g.lat;b.lon=g.lon;b.address=baseQuery||g.display;}catch(e){}}
+  const t={id,name,region,startDate:start,endDate:end,baseId:"hotel",dayBases:{},places:[b],legacyExtras:false,seed:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};ensureTripSchema(t);library.trips.push(t);saveLibrary();closeModal();renderTripGate();selectTrip(id);setTimeout(()=>openPlacesImport(),180);
+}
+window.createTripFromForm=createTripFromForm;
+function openTripActions(id,fromApp=false){
+  const t=tripById(id);if(!t)return;const isCurrent=currentTrip?.id===id;
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>${esc(t.name)}</h2><div class="status" style="margin:-6px 0 12px">${esc(t.region||"Region not set")} · ${esc(dateRangeLabel(t))}</div><div class="action-grid">
+  ${fromApp?`<button class="primary" onclick="closeModal();showTripGate()">Select another trip<small>Return to the trip library.</small></button>`:`<button class="primary" onclick="closeModal();selectTrip('${id}')">Open trip<small>Open this map and itinerary.</small></button>`}
+  <button onclick="renameTripPrompt('${id}')">Rename<small>Change the trip/map name.</small></button>
+  <button onclick="openTripExportMenu('${id}')">Export<small>CSV, KML or full Route Studio backup.</small></button>
+  <button onclick="shareTrip('${id}')">Share<small>Share the portable trip backup when supported.</small></button>
+  <button onclick="duplicateTrip('${id}')">Duplicate<small>Create an independent editable copy.</small></button>
+  <button class="danger" onclick="deleteTrip('${id}')">Delete<small>Remove this trip from this browser.</small></button>
+  ${isCurrent?`<button onclick="openBaseManager()">Manage bases<small>Build multi-stage days with different start and end hotels.</small></button><button onclick="openRoutingSettings()">Transit setup<small>Configure detailed in-app public-transport routing.</small></button>`:""}
+  </div><div class="modal-actions"><button onclick="closeModal()">Close</button></div></div></div>`;
+}
+window.openTripActions=openTripActions;
+function renameTripPrompt(id){const t=tripById(id);if(!t)return;$("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Rename trip</h2><div class="field"><label>Trip name</label><input id="rnTrip" value="${esc(t.name)}"></div><div class="modal-actions"><button onclick="closeModal()">Cancel</button><button class="primary" onclick="saveTripRename('${id}')">Rename</button></div></div></div>`;setTimeout(()=>$("#rnTrip")?.select(),0);}window.renameTripPrompt=renameTripPrompt;
+function saveTripRename(id){const t=tripById(id),name=$("#rnTrip")?.value.trim();if(!t||!name)return;t.name=name;t.updatedAt=new Date().toISOString();if(currentTrip?.id===id)currentTrip.name=name;saveLibrary();closeModal();renderTripGate();if(currentTrip?.id===id)renderAll();toast("Trip renamed.");}window.saveTripRename=saveTripRename;
+function duplicateTrip(id){const t=tripById(id);if(!t)return;const c=clone(t);c.id=`trip_${Date.now()}`;c.name=`${t.name} · copy`;c.seed=false;c.createdAt=c.updatedAt=new Date().toISOString();library.trips.push(c);saveLibrary();closeModal();renderTripGate();toast("Trip duplicated.");}
+window.duplicateTrip=duplicateTrip;
+function downloadTrip(id){const t=tripById(id);if(!t)return;download(`${safeSlug(t.name)}_route_studio.json`,JSON.stringify({version:4,trip:t},null,2),"application/json");}
+window.downloadTrip=downloadTrip;
+function tripCSV(t){const cols=["Name","Location","Locale","Latitude","Longitude","Day","Category","Priority","Suggested Time","Suggested Duration (min)","Opening Hours","Notes"];const csv=v=>`"${String(v??"").replaceAll('"','""')}"`;return [cols.join(","),...(t.places||[]).map(p=>[p.name,p.address,p.locale||"",p.lat,p.lon,p.day,p.category,p.priority,p.time,p.duration,p.hours,p.note].map(csv).join(","))].join("\n");}
+function tripKML(t){const e=x=>String(x??"").replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));const ps=(t.places||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)).map(p=>`<Placemark><name>${e(p.name)}</name><address>${e(p.address)}</address><description>${e(`${p.day||""} · ${p.category||""} · ${p.note||""}`)}</description><Point><coordinates>${p.lon},${p.lat},0</coordinates></Point></Placemark>`).join("");return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${e(t.name)}</name>${ps}</Document></kml>`;}
+function openTripExportMenu(id){const t=tripById(id);if(!t)return;$("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Export ${esc(t.name)}</h2><div class="action-grid"><button onclick="exportTripFormat('${id}','csv')">CSV<small>Google My Maps / spreadsheet-friendly place list.</small></button><button onclick="exportTripFormat('${id}','kml')">KML<small>Portable map markers for mapping apps.</small></button><button onclick="exportTripFormat('${id}','json')">Route Studio backup<small>Preserves dates, ordering, notes and app fields.</small></button></div><div class="modal-actions"><button onclick="closeModal()">Close</button></div></div></div>`;}window.openTripExportMenu=openTripExportMenu;
+function exportTripFormat(id,f){const t=tripById(id);if(!t)return;const slug=safeSlug(t.name);if(f==="csv")download(`${slug}.csv`,tripCSV(t),"text/csv;charset=utf-8");else if(f==="kml")download(`${slug}.kml`,tripKML(t),"application/vnd.google-earth.kml+xml");else downloadTrip(id);toast(`${f.toUpperCase()} exported.`);}window.exportTripFormat=exportTripFormat;
+async function shareTrip(id){const t=tripById(id);if(!t)return;const data=JSON.stringify({version:4,trip:t},null,2);try{const file=new File([data],`${safeSlug(t.name)}_route_studio.json`,{type:"application/json"});if(navigator.canShare?.({files:[file]})){await navigator.share({title:t.name,text:`Route Studio trip: ${t.name}`,files:[file]});closeModal();return;}if(navigator.share){await navigator.share({title:t.name,text:`Route Studio trip: ${t.name}`});return;}throw new Error("File sharing is not supported by this browser.");}catch(e){if(e?.name==="AbortError")return;download(`${safeSlug(t.name)}_route_studio.json`,data,"application/json");toast("This browser cannot directly share local files, so the trip backup was downloaded instead.");}}window.shareTrip=shareTrip;
+function deleteTrip(id){const t=tripById(id);if(!t)return;if(!confirm(`Delete ${t.name}? This cannot be undone unless you exported a backup.`))return;library.trips=library.trips.filter(x=>x.id!==id);saveLibrary();if(currentTrip?.id===id){currentTrip=null;currentTripId=null;localStorage.removeItem(ACTIVE_KEY);$("#tripGate").classList.remove("hidden");}closeModal();renderTripGate();}
+window.deleteTrip=deleteTrip;
+function openTripImport(){closeModal();$("#importFile").dataset.mode="trip";$("#importFile").accept=".json,application/json";$("#importFile").click();}
+window.openTripImport=openTripImport;
+
+/* ---------- Bulk place import / automatic localisation ---------- */
+let pendingImportRows=[];
+function openPlacesImport(){
+  const days=tripDates();const d=state.day!=="all"?state.day:(days[0]||currentTrip?.startDate||new Date().toISOString().slice(0,10));
+  $("#modalHost").innerHTML=`<div class="modal-backdrop"><div class="modal"><h2>Import places</h2><div id="placeDrop" class="drop-zone"><b>Drop CSV, KML or JSON here</b><span>Google My Maps-style CSV works. Latitude/longitude is fastest. Optional Locale/Region columns let multi-city trips resolve each POI by place name + locale, never by street address.</span></div><div class="field" style="margin-top:10px"><label>Or paste places, one per line</label><textarea id="pastePlaces" placeholder="Dome of Light | Kaohsiung, Taiwan\nPier-2 Art Center | No. 1 Dayong Rd..."></textarea></div><div class="form-grid" style="margin-top:8px"><div class="field"><label>Assign to day</label><select id="importDay">${dayOptions(d)}</select></div><div class="field"><label>Default priority</label><select id="importPriority"><option>Medium</option><option>High</option><option>Optional</option></select></div></div><div id="importStatus" class="status">After import, the map auto-fits the location cluster and the trip region is inferred from the cluster centre.</div><div id="importPreview" class="import-preview hidden"></div><div class="modal-actions"><button onclick="closeModal()">Cancel</button><button onclick="choosePlaceFile()">Choose file</button><button class="primary" onclick="importPastedPlaces()">Import</button></div></div></div>`;
+  const dz=$("#placeDrop");["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("dragover")}));["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("dragover")}));dz.addEventListener("drop",e=>{const f=e.dataTransfer.files?.[0];if(f)handlePlaceFile(f);});
+}
+window.openPlacesImport=openPlacesImport;
+function choosePlaceFile(){$("#importFile").dataset.mode="places";$("#importFile").accept=".csv,.kml,.json,text/csv,application/json,application/vnd.google-earth.kml+xml";$("#importFile").click();}
+window.choosePlaceFile=choosePlaceFile;
+function toNum(v){const s=String(v??"").trim();if(!s)return null;const n=Number(s);return Number.isFinite(n)?n:null;}
+function parseCSV(txt){
+  const rows=[];let row=[],cell="",q=false;for(let i=0;i<txt.length;i++){const c=txt[i],n=txt[i+1];if(c==='"'){if(q&&n==='"'){cell+='"';i++;}else q=!q;}else if(c===','&&!q){row.push(cell);cell="";}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&n==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell="";}else cell+=c;}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows;
+}
+function rowsFromCSV(txt){const arr=parseCSV(txt);if(arr.length<2)return[];const h=arr[0].map(x=>x.trim().toLowerCase());const idx=(...names)=>h.findIndex(x=>names.includes(x));const ni=idx("name","title","place"),ai=idx("location","address","place address"),loi=idx("locale","region","city / region"),lati=idx("latitude","lat"),loni=idx("longitude","lon","lng","long"),di=idx("day","date"),ci=idx("category","type"),pi=idx("priority"),ti=idx("suggested time","time"),hi=idx("opening hours","hours"),dui=idx("suggested duration (min)","duration","duration (min)"),noi=idx("notes","note");return arr.slice(1).map((r,i)=>({name:(ni>=0?r[ni]:"")||`Place ${i+1}`,address:ai>=0?r[ai]||"":"",locale:loi>=0?r[loi]||"":"",lat:lati>=0?toNum(r[lati]):null,lon:loni>=0?toNum(r[loni]):null,day:di>=0?r[di]||"":"",category:ci>=0?r[ci]||"Place":"Place",priority:pi>=0?r[pi]||"":"",time:ti>=0?r[ti]||"":"",hours:hi>=0?r[hi]||"":"",duration:dui>=0?Number(r[dui]||45):45,note:noi>=0?r[noi]||"":""}));}
+function rowsFromKML(txt){const doc=new DOMParser().parseFromString(txt,"application/xml");return [...doc.querySelectorAll("Placemark")].map((pm,i)=>{const coords=(pm.querySelector("Point coordinates")?.textContent||"").trim().split(",");return{name:(pm.querySelector("name")?.textContent||`Place ${i+1}`).trim(),address:(pm.querySelector("address")?.textContent||pm.querySelector("description")?.textContent||"").replace(/<[^>]+>/g," ").trim(),locale:"",lat:toNum(coords[1]),lon:toNum(coords[0]),category:"Place",priority:"",duration:45,note:""};});}
+function rowsFromJSON(txt){const d=JSON.parse(txt);const arr=Array.isArray(d)?d:Array.isArray(d.places)?d.places:Array.isArray(d.trip?.places)?d.trip.places:[];return arr.filter(p=>!isBasePlace(p)).map(p=>({name:p.name||"Place",address:p.address||p.location||"",locale:p.locale||"",lat:toNum(p.lat??p.latitude),lon:toNum(p.lon??p.lng??p.longitude),day:p.day||"",category:p.category||"Place",priority:p.priority||"",time:p.time||"",hours:p.hours||"",duration:Number(p.duration||45),note:p.note||p.notes||"",source:p.source||""}));}
+async function handlePlaceFile(file){try{const txt=await file.text();let rows=[];const n=file.name.toLowerCase();if(n.endsWith(".csv"))rows=rowsFromCSV(txt);else if(n.endsWith(".kml"))rows=rowsFromKML(txt);else rows=rowsFromJSON(txt);if(!rows.length)throw new Error("No place rows found");pendingImportRows=rows;showImportPreview(rows,file.name);await executePlaceImport(rows);}catch(e){const s=$("#importStatus");if(s)s.textContent=`Could not import: ${e.message}`;}}
+function showImportPreview(rows,label="import"){$("#importPreview").classList.remove("hidden");$("#importPreview").innerHTML=rows.slice(0,25).map(r=>`<div class="import-row"><b>${esc(r.name)}</b><span>${esc(r.address||`${r.lat||"?"}, ${r.lon||"?"}`)}</span><span class="${Number.isFinite(r.lat)&&Number.isFinite(r.lon)?"import-good":"import-warn"}">${Number.isFinite(r.lat)&&Number.isFinite(r.lon)?"located":"geocode"}</span></div>`).join("")+ (rows.length>25?`<div class="import-row"><span>+ ${rows.length-25} more</span></div>`:"");$("#importStatus").textContent=`${rows.length} place${rows.length===1?"":"s"} read from ${label}. Importing…`;}
+async function importPastedPlaces(){const txt=$("#pastePlaces")?.value.trim();if(!txt){toast("Paste some places or choose a file.");return;}const rows=txt.split(/\n+/).map((line,i)=>{const [a,...rest]=line.split("|");return{name:a.trim()||`Place ${i+1}`,address:(rest.join("|").trim()||a.trim()),lat:null,lon:null,category:"Place",duration:45};}).filter(r=>r.name);showImportPreview(rows,"pasted list");await executePlaceImport(rows);}
+window.importPastedPlaces=importPastedPlaces;
+async function executePlaceImport(rows){
+  const defaultDay=$("#importDay")?.value||(tripDates()[0]||currentTrip.startDate),priority=$("#importPriority")?.value||"Medium";let added=0,failed=0;const status=$("#importStatus");
+  for(let i=0;i<rows.length;i++){const r=rows[i];let lat=toNum(r.lat),lon=toNum(r.lon);if(!Number.isFinite(lat)||!Number.isFinite(lon)){try{const g=await geocodeAddress(placeQuery({name:r.name,locale:r.locale||stageLocaleForDay(r.day||defaultDay),day:r.day||defaultDay}));lat=g.lat;lon=g.lon;if(!r.address)r.address=g.display;}catch(e){failed++;if(status)status.textContent=`Locating ${i+1}/${rows.length}… ${failed} unmatched`;continue;}}
+    if(String(r.day||"").toLowerCase()==="base"){let b=defaultBase();if(!b){b={id:"hotel",day:"Base",order:0,time:"Start / end",duration:0,slot:"base",priority:"Base",isBase:true};state.places.unshift(b);}Object.assign(b,{name:r.name||"Trip base",address:r.address||"",locale:r.locale||stageLocaleForDay(r.day||defaultDay)||currentTrip?.region||"",lat,lon,category:r.category||"Hotel / base",hours:r.hours||"Base",note:r.note||"",synthetic:false,isBase:true});currentTrip.baseId=b.id;ensureTripSchema(currentTrip);continue;}
+    const dup=state.places.some(p=>!isBasePlace(p)&&((p.name||"").toLowerCase()===(r.name||"").toLowerCase()&&Math.abs((p.lat||0)-lat)<.0002&&Math.abs((p.lon||0)-lon)<.0002));if(dup)continue;
+    const day=tripDates().includes(r.day)?r.day:defaultDay;state.places.push({id:`p_${Date.now()}_${i}`,name:r.name,zh:r.zh||"",address:r.address||"",locale:r.locale||stageLocaleForDay(day)||currentTrip?.region||"",lat,lon,category:r.category||"Place",rating:r.rating||null,reviews:r.reviews||null,hours:r.hours||"",day,order:999,time:r.time||"",duration:Number(r.duration||45),slot:r.slot||"afternoon",priority:r.priority||priority,note:r.note||"",source:r.source||""});added++;if(status)status.textContent=`Importing ${i+1}/${rows.length}… ${added} added`;
+  }
+  normalizeOrders();await localizeTripFromPlaces(true);save();state.day="all";renderAll();fitVisible();if(status)status.textContent=`Done: ${added} added${failed?`, ${failed} could not be located`:""}. Map and trip region updated.`;toast(`${added} place${added===1?"":"s"} imported${failed?`; ${failed} unmatched`:""}.`);
+}
+async function localizeTripFromPlaces(reverse=true){
+  const pts=state.places.filter(p=>!isBasePlace(p)&&Number.isFinite(p.lat)&&Number.isFinite(p.lon));if(!pts.length)return;const lat=pts.reduce((s,p)=>s+p.lat,0)/pts.length,lon=pts.reduce((s,p)=>s+p.lon,0)/pts.length;currentTrip.center={lat,lon};
+  const b=defaultBase();if(b&&(!Number.isFinite(b.lat)||!Number.isFinite(b.lon)||b.synthetic)){b.lat=lat;b.lon=lon;b.synthetic=true;b.name=b.name&&b.name!=="Trip base"?b.name:"Trip centre (set your hotel/base)";b.address=currentTrip.region||"Auto-centre from imported locations";}
+  if(reverse){try{const latSpan=Math.max(...pts.map(p=>p.lat))-Math.min(...pts.map(p=>p.lat)),lonSpan=Math.max(...pts.map(p=>p.lon))-Math.min(...pts.map(p=>p.lon));const spread=Math.max(latSpan,lonSpan);const zoom=spread>2?5:spread>.6?7:10;const r=await reverseGeocode(lat,lon,zoom);if(r.region){currentTrip.region=r.region;if(b?.synthetic)b.address=`Auto-centre · ${r.region}`;}}catch(e){}}
+  currentTrip.places=clone(state.places);currentTrip.updatedAt=new Date().toISOString();const ix=library.trips.findIndex(t=>t.id===currentTrip.id);if(ix>=0)library.trips[ix]=currentTrip;saveLibrary();
+}
+window.localizeTripFromPlaces=localizeTripFromPlaces;
+
+$("#importFile").onchange=async e=>{const file=e.target.files[0];if(!file)return;const mode=e.target.dataset.mode||"places";try{if(mode==="trip"){const data=JSON.parse(await file.text());const t=data.trip||data;if(!t||!Array.isArray(t.places))throw new Error("No trip data found");const copy=clone(t);ensureTripSchema(copy);if(library.trips.some(x=>x.id===copy.id))copy.id=`trip_${Date.now()}`;copy.seed=false;copy.updatedAt=new Date().toISOString();library.trips.push(copy);saveLibrary();renderTripGate();toast("Trip backup imported.");}else await handlePlaceFile(file);}catch(err){toast(`Import failed: ${err.message}`);}e.target.value="";e.target.dataset.mode="";};
+
+renderTripGate();
+setTimeout(()=>{if(tripById("taiwan_master_2026_nov_02_09")) selectTrip("taiwan_master_2026_nov_02_09");},80);
+const last=localStorage.getItem(ACTIVE_KEY);if(last&&tripById(last)){/* current master auto-selects on launch */}
+
+
+
+// v2.7 responsive layout selector. Desktop remains unchanged; iPhone/iPad can
+// switch between itinerary-first, split, and map-first views without losing state.
+function setMobileView(view,persist=true){
+  const allowed=["plan","split","map"];if(!allowed.includes(view))view="split";
+  document.body.dataset.mobileView=view;
+  $$("#mobileViewToggle button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+  if(persist){try{localStorage.setItem("route-studio-mobile-view-v1",view)}catch(e){}}
+  setTimeout(()=>{try{map.invalidateSize();if(view!=="plan")fitVisible();}catch(e){}},90);
+}
+window.setMobileView=setMobileView;
+$$("#mobileViewToggle button").forEach(b=>b.onclick=()=>setMobileView(b.dataset.view));
+let savedMobileView="";try{savedMobileView=localStorage.getItem("route-studio-mobile-view-v1")||""}catch(e){}
+const initialMobileView=savedMobileView||((window.matchMedia&&window.matchMedia("(max-width:640px)").matches)?"plan":"split");
+setMobileView(initialMobileView,false);
+window.addEventListener("orientationchange",()=>setTimeout(()=>{try{map.invalidateSize();}catch(e){}},220));
+window.addEventListener("resize",()=>setTimeout(()=>{try{map.invalidateSize();}catch(e){}},80),{passive:true});
+
+// Installable PWA support when the folder is served over HTTPS/localhost.
+// Direct file:// opening on the laptop continues to work as before.
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+
+</script>
+</body>
+</html>
